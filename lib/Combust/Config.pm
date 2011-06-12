@@ -276,7 +276,7 @@ sub root_docs {
 }
 
 sub docs_name {
-  $cfg->param('docs_name') || 'docs/live';
+  $cfg->param('docs_name') || 'docs';
 }
 
 sub job_servers {
