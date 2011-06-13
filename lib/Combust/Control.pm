@@ -221,7 +221,6 @@ sub evaluate_template {
 
   my $tpl_params    = { %{$self->tpl_params }, ($_[0] and ref $_[0] eq 'HASH') ? %{$_[0]} : @_ };
 
-  local $tpl_params->{root} = $config->root;  # localroot anyone?
   local $tpl_params->{siteconfig} = $self->site && $self->config->site->{$self->site};
 
   local $tpl_params->{combust} = $self;
