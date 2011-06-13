@@ -74,7 +74,7 @@ sub _init {
         #               http => 1,
         #		    default => 1,
         #	            },
-        'PRE_PROCESS' => 'tpl/defaults',
+        'PRE_PROCESS' => [ 'tpl/combust_defaults', 'tpl/defaults' ],
         'PROCESS'     => 'tpl/wrapper',
         'PLUGIN_BASE' => 'Combust::Template::Plugin',
         # 'DEBUG'  => DEBUG_VARS | DEBUG_DIRS | DEBUG_STASH
