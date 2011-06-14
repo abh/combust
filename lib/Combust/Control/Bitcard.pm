@@ -110,6 +110,7 @@ sub logout {
     my $self = shift;
     my $uri  = shift || '/';
     $self->cookie($cookie_name, 0);
+    $self->no_cache(1);
     $self->user(undef);
     return OK, $self->onepixelgif, 'image/gif' if $self->req_param('bc-logout');
     $uri = $self->config->base_url($self->site) . $uri
@@ -143,8 +144,6 @@ sub user {
   $self->cookie($cookie_name, '0');
   return;
 }
-
-
 
 
 1;
