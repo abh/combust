@@ -32,7 +32,11 @@ ok(my $app = Trivial::App->new, 'new app');
 
        $res = $cb->(GET "/five");
        like $res->content, qr/The time is now/, "/two internal redirect via .htredirects";
-       is $res->header('location'), undef, "No redirection header"
+       is $res->header('location'), undef, "No redirection header";
+
+       ok($res = $cb->(GET "/six"), "/six - perm redirect via .htredirects");
+       is $res->header('location'), 'http://www.perl.org/', "Correct redirect header";
+       is $res->code, 301, "301 response";
 
    };
 
