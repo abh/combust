@@ -91,6 +91,8 @@ sub run {
         return SERVER_ERROR;
     }
 
+    return [$status] if $status == DECLINED;
+
     # warn "STATUS RETURNED: $status";
     # warn "output returned: [$output]";
 

@@ -63,7 +63,7 @@ sub rewrite {
   # warn join " / ", "REDIRECT CHECK FOR $site", $uri;
 
   my $path = $self->get_include_path($request);
-  return unless $path and $path->[0];
+  return DECLINED unless $path and $path->[0];
 
   my $file;
 
@@ -89,7 +89,7 @@ sub rewrite {
 
   #warn Data::Dumper->Dump([\$conf],[qw(conf)]);
 
-  return unless $conf and ref $conf eq "ARRAY";
+  return DECLINED unless $conf and ref $conf eq "ARRAY";
 
   for my $c (@$conf) {
     if (my @n = ($uri =~ m/$c->[0]/)) {
