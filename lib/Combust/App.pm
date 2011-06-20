@@ -79,7 +79,7 @@ sub exec {
     #warn "ENV: ", pp(\$env);
 
     {
-        my $r = $self->rewriter->rewrite($request) if $self->rewriter;
+        my $r = $self->rewriter && $self->rewriter->rewrite($request);
         return $r if $r;
     }
 
