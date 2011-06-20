@@ -17,13 +17,22 @@ ok(my $app = Trivial::App->new, 'new app');
      client => sub {
        my $cb = shift;
        my $res = $cb->(GET "/three.html");
-       like $res->content, qr/Hello World/;
+       like $res->content, qr/Hello World/, "three.html";
 
        $res = $cb->(GET "/three");
-       like $res->content, qr/Hello Static/;
+       like $res->content, qr/Hello Static/, "/three";
 
        $res = $cb->(GET "/two/redirect");
-       like $res->content, qr/The document has moved/;
+       like $res->content, qr/The document has moved/, "/two/redirect";
+       is $res->header('location'), "http://www.cpan.org/";
+
+       $res = $cb->(GET "/four");
+       like $res->content, qr/The document has moved/, "/four redirect via .htredirects";
+       is $res->header('location'), "http://one.example.com/two";
+
+       $res = $cb->(GET "/five");
+       like $res->content, qr/The time is now/, "/two internal redirect via .htredirects";
+       is $res->header('location'), undef, "No redirection header"
 
    };
 

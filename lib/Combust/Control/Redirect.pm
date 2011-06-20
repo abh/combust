@@ -53,9 +53,9 @@ my $stat_check = 0;
 my %files;
 
 sub rewrite {
-  my ($self, $request) = @_;
+  my $self = shift;
 
-  $self->request($request);
+  my $request = $self->request;
 
   my $site = $request->site;
   my $uri  = $request->uri;
@@ -109,7 +109,7 @@ sub rewrite {
     }
   }
 
-  return;
+  return DECLINED;
 
 }
 

@@ -6,6 +6,7 @@ use Plack::Request;
 use Combust::Config;
 use Combust::Site;
 use Combust::Request::Plack;
+use Combust::Constant qw(DECLINED); 
 use File::Path qw(mkpath);
 
 my $config = Combust::Config->new;
@@ -79,8 +80,11 @@ sub exec {
     #warn "ENV: ", pp(\$env);
 
     {
-        my $r = $self->rewriter && $self->rewriter->rewrite($request);
-        return $r if $r;
+        if (my $rewriter = $self->rewriter) {
+            $rewriter->request($request);
+            my $r = $rewriter->run("rewrite");
+            return $r unless $r->[0] == DECLINED;
+        }
     }
 
     my $match = $request->site->router->match($request->env);

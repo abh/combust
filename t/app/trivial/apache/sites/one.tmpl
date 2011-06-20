@@ -4,8 +4,6 @@
     [% expandServerAliases( config.site.${site}.aliases ) %]
     #PerlTransHandler Combust::Redirect->super
 
-	DocumentRoot /tmp/foo/
-
     PerlModule Trivial::Control::One
     <Location /one>
        SetHandler perl-script

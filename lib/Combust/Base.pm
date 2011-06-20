@@ -6,7 +6,7 @@ my $config = Combust::Config->new();
 
 has 'request' => (
     is       => 'rw',
-    required => 0,
+    required => 1,
 );
 
 sub get_include_path {
