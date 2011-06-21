@@ -2,9 +2,7 @@
     PerlSetVar site [% site %]
     ServerName [% config.site.${site}.servername %]
     [% expandServerAliases( config.site.${site}.aliases ) %]
-    #PerlTransHandler Combust::Redirect->super
 
-    PerlModule Trivial::Control::One
     <Location /one>
        SetHandler perl-script
        PerlResponseHandler Trivial::Control::One->super
@@ -15,10 +13,9 @@
        PerlResponseHandler Combust::Control::Basic->super
     </Location>
 
-    PerlModule +Trivial::Control::Two
     <Location /two>
        SetHandler perl-script
-       PerlResponseHandler Trivial::Control::Two->super
+       PerlResponseHandler +Trivial::Control::Two->super
     </Location>
 
     <Location /two/redirect>

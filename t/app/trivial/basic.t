@@ -38,6 +38,12 @@ ok(my $app = Trivial::App->new, 'new app');
        is $res->header('location'), 'http://www.perl.org/', "Correct redirect header";
        is $res->code, 301, "301 response";
 
+       ok($res = $cb->(GET "http://two.example.com/"), "site 'two' homepage");
+       is $res->code, 200, "200 response";
+       like $res->content, qr/site: two/, "correct content";
+
+
+
    };
 
 
