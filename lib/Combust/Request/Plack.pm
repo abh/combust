@@ -59,9 +59,21 @@ sub args {
 # Apache::Request->uri), so we do a bit of craziness to emulate that.
 sub uri {
     my $self = shift;
-    my $uri = $self->SUPER::uri(@_);
+    if (@_) {
+        # compatibility with old combust
+        $self->path(@_);
+    }
+    my $uri = $self->SUPER::uri;
     $uri = Combust::Request::URI->new( $uri->as_string, $self->path );
     return $uri;
+}
+
+sub path {
+    my $self = shift;
+    if (@_) {
+        $self->env->{PATH_INFO} = shift;
+    }
+    return $self->SUPER::path;
 }
 
 sub request_url {
