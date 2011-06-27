@@ -66,15 +66,9 @@ sub render {
 sub serve_static_file {
     my $self = shift;
 
-    my $uri = $self->request->uri; 
+    $self->fixup_static_version;
 
-    if ($uri =~ s!^(/.*)\.v[0-9a-f.]+\.(js|css|gif|png|jpg|ico)$!$1.$2!) {
-        my $max_age = 315360000; # ten years
-        $self->request->header_out('Expires', HTTP::Date::time2str( time() + $max_age ));
-        $self->request->header_out('Cache-Control', "max-age=${max_age},public");
-        $self->request->uri($uri);
-    }
-
+    my $uri = $self->request->path;
 
     # if the filename does not end in .html, then do not process it
     # with TT and just send it.
@@ -101,6 +95,18 @@ sub serve_static_file {
         else {
             return 404;
         }
+    }
+}
+
+sub fixup_static_version {
+    my $self = shift;
+    my $uri = $self->request->path;
+ 
+    if ($uri =~ s!^(/.*)\.v[0-9a-f.]+\.(js|css|gif|png|jpg|ico)$!$1.$2!) {
+        my $max_age = 315360000; # ten years
+        $self->request->header_out('Expires', HTTP::Date::time2str( time() + $max_age ));
+        $self->request->header_out('Cache-Control', "max-age=${max_age},public");
+        $self->request->path($uri);
     }
 }
 
