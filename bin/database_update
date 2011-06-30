@@ -4,8 +4,10 @@ eval 'exec $CBROOT/bin/perl $0 ${1+"$@"}'
 use strict;
 use warnings;
 use Combust::DB qw(db_open);
+use Combust::Util qw(run);
 use Getopt::Long qw(GetOptions);
 use List::Util qw(first);
+use File::Basename qw(dirname);
 
 =head1 database_update
 
@@ -68,6 +70,8 @@ my $dbh = db_open($database);
 
 $dbh->{PrintError} = 0; # RaiseError does this already
 
+my $script_path;
+
 my %rev;
 {
     my $cur_rev;
@@ -76,6 +80,7 @@ my %rev;
     my $filename = first { -f $_ } @files;
     die "Could not find sql/$database.update file\n" unless $filename;
     open my $fh, "<", $filename or die "Could not open $filename: $!";
+    $script_path = dirname($filename) . "/scripts/$database";
     while (<$fh>) {
         if (my ($new_rev, $options) = (m/^\#(\d+|todo)\s*(.*)/i)) {
             $rev{$cur_rev}->{sql} = _split_sql($sql) if $cur_rev and $sql;
@@ -134,8 +139,11 @@ if ($latest_version > $db_version) {
     #warn Data::Dumper->Dump([\$x], [qw(x)]);
     local $dbh->{RaiseError} = 0 if $rev{$r}->{try};
     for my $c (@{ $rev{$r}->{sql} }) {
-      my @tables;
       do_sql($c);
+    }
+    my $script = "$script_path.$r";
+    if (-f $script) {
+        run($script);
     }
     update_db_version($r);
   }
