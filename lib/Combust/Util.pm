@@ -1,11 +1,13 @@
 package Combust::Util;
 use warnings;
 use strict;
+use utf8;
 use base qw(Exporter);
 use Carp qw(croak);
 
 our @EXPORT_OK = qw(
    run
+   utf8_safe
 );
 
 sub run {
@@ -25,6 +27,14 @@ sub run {
     croak($msg) unless $parms->{failok};
     print "$msg\n";
     return 0;
+}
+
+sub utf8_safe {
+    my $text = shift;
+    $text = Encode::decode("windows-1252", $text)
+      unless utf8::is_utf8($text)
+          or utf8::decode($text);
+    return $text;
 }
 
 1;

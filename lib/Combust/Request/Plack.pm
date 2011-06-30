@@ -3,6 +3,7 @@ use Moose;
 use MooseX::NonMoose;
 use Plack::Request;
 use Combust::Request::URI;
+use Combust::Util qw(utf8_safe);
 extends 'Plack::Request';
 
 has 'response' => (
@@ -46,7 +47,7 @@ sub remote_ip {
 sub req_param {
     my ($self, $param) = (shift, shift);
     $self->args->{$param} = shift if @_;
-    return $self->parameters->{$param};
+    return utf8_safe($self->parameters->{$param});
 }
 
 sub args {
