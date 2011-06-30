@@ -4,10 +4,12 @@ use strict;
 use utf8;
 use base qw(Exporter);
 use Carp qw(croak);
+use HTML::Entities qw(encode_entities);
 
 our @EXPORT_OK = qw(
    run
    utf8_safe
+   escape_html
 );
 
 sub run {
@@ -36,5 +38,11 @@ sub utf8_safe {
           or utf8::decode($text);
     return $text;
 }
+
+sub escape_html {
+    my $string = shift;
+    return encode_entities($string, '<>&"'); # how can we encode everything without messing up UTF8?
+}
+
 
 1;
