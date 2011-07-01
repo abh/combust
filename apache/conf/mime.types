@@ -556,6 +556,7 @@ text/vnd.wap.si
 text/vnd.wap.sl
 text/vnd.wap.wml		wml
 text/vnd.wap.wmlscript		wmls
+text/x-component                htc
 text/x-setext			etx
 text/xml
 text/xml-external-parsed-entity
