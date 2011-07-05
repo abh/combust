@@ -39,7 +39,7 @@ sub _init {
 
     my %provider_config = (
         PARSER      => $parser,
-        COMPILE_EXT => '.ttc',
+        COMPILE_EXT => '.ttcache',
         COMPILE_DIR => $config->work_path . "/ctpl",
         UNICODE     => 1,
         ENCODING    => 'utf-8',
