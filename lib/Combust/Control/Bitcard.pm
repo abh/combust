@@ -10,7 +10,7 @@ sub bc_check_login_parameters {
     my $self = shift;
     if ($self->req_param('sig') or $self->req_param('bc_id')) {
         my $bc = $self->bitcard;
-        my $bc_user = eval { $bc->verify($self->r) };
+        my $bc_user = eval { $bc->verify( { %{ $self->request->parameters } }) };
         warn $@ if $@;
         unless ($bc_user) {
             warn "Authen::Bitcard error: ", $bc->errstr;
