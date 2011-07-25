@@ -21,15 +21,15 @@ sub render {
     }
 
     my $api_options = eval { $self->api_options } || {};
-    if ($@) {
-        return $self->system_error(500, $@);
+    if (my $err = $@) {
+        return $self->system_error(500, $err);
     }
     
     my ($result, $meta) = eval {
         $self->api($method, $self->api_params, { json => 1, %$api_options });
     };
-    if ($@) {
-        return $self->system_error(500, $@);
+    if (my $err = $@) {
+        return $self->system_error(500, $err);
     }
     
     return $self->system_error(500, "$uri didn't return a result") unless (defined $result);
