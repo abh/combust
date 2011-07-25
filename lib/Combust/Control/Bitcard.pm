@@ -48,8 +48,8 @@ sub _setup_user {
 
 sub is_logged_in {
     my $self = shift;
-    my $user_info = $self->user;
-    return 1 if $user_info and $user_info->{id};
+    my $user = $self->user;
+    return 1 if $user and $user->id;
     return 0;
 }
 
