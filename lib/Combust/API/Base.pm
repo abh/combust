@@ -31,4 +31,15 @@ sub _optional_param {
     return @{$p}{@_};
 }
 
+sub evaluate_template {
+    my ($self, $args) = @_;
+    my $params   = $args->{params};
+    my $template = $args->{template};
+    my $tt       = Combust::Template->new();
+
+    my $out = eval { $tt->process($template, $params, { site => $self->{args}->{site}->name }) };
+    die "error rendering template '$template': $@" if $@;
+    return $out;
+}
+
 1;

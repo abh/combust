@@ -26,7 +26,7 @@ sub render {
     }
     
     my ($result, $meta) = eval {
-        $self->api($method, $self->api_params, { json => 1, %$api_options });
+        $self->api($method, $self->api_params, {json => 1, site => $self->site, %$api_options});
     };
     if (my $err = $@) {
         return $self->system_error(500, $err);
