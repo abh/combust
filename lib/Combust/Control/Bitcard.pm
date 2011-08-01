@@ -135,6 +135,10 @@ sub user {
       # Class::DBI
       $user = $self->bc_user_class->retrieve($uid);
   }
+  elsif ($self->bc_user_class->can('find')) {
+      # DBIx::Class
+      $user = $self->bc_user_class->find($uid);
+  }
   elsif ($self->bc_user_class->can('fetch')) {
       # RDBO with combust helpers
       $user = $self->bc_user_class->fetch(id => $uid);
