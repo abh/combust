@@ -161,16 +161,15 @@ sub reference {
     $logfh->autoflush(1);
     STDERR->autoflush(1);
 
-    my $trust_all = _get_forwarders();
+    my @trusted_ips = $config->proxyip_forwarders;
+    @trusted_ips = () if grep { $_ eq '*' } @trusted_ips;
 
     builder {
         if ($config->apache_reload) {
             enable "Refresh", cooldown => 2;
         }
-        enable_if {
-            my $remote_ip = $_[0]->{REMOTE_ADDR};
-            $trust_all or _trusted_ip($remote_ip)
-        } "Plack::Middleware::ReverseProxy";
+        enable "Plack::Middleware::XForwardedFor",
+          (@trusted_ips ? (trust => \@trusted_ips) : ());
         enable "AccessLog",
           logger => sub { print $logfh @_ },
           format => "%h %V %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-agent}i\"";
@@ -178,50 +177,6 @@ sub reference {
         inner();
         $app;
     }
-}
-
-my $_forwarders = [];
-
-sub _trusted_ip {
-    my $ip = shift;
-    for my $fw (@$_forwarders) {
-        return 1 if (ref $fw ? $fw->match($ip) : ($ip eq $fw));
-    }
-    return 0;
-}
-
-
-sub _get_forwarders {
-
-    my $trust_all = 0;
-    my $net_netmask_loaded;
-    my @forwarders;
-
-    for my $ip ($config->proxyip_forwarders) {
-
-        if ($ip eq '*') {
-            return (1, []);
-        }
-
-        unless ($ip =~ m!/!) {
-            push @forwarders, $ip;
-            next;
-        }
-
-        unless ($net_netmask_loaded or ($net_netmask_loaded = eval { require Net::Netmask; 1; })) {
-            warn "Net::Netmask not installed, could not use $ip as a proxyip_forwarder";
-            next;
-        }
-
-        $ip = Net::Netmask->new2($ip);
-        warn "Error defining trusted upstream proxy: " . Net::Netmask::errstr() unless $ip;
-        push @forwarders, $ip if $ip;
-
-    }
-
-    $_forwarders = \@forwarders;
-
-    return 0;
 }
 
 1;
