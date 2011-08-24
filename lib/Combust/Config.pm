@@ -311,7 +311,10 @@ sub memcached_servers {
 # apache configuration
 
 sub maxclients          { $cfg->param('apache.maxclients')      || 20 }
-sub keepalive           { $cfg->param('apache.keepalive')       || 'Off' }
+sub keepalive {
+    my $k = $cfg->param('apache.keepalive');
+    return ($k and lc $k ne 'off') ? 1 : 0;
+}
 sub keepalivetimeout    { $cfg->param('apache.keepalivetimeout')|| 300 }
 sub startservers        { $cfg->param('apache.startservers')    || 5 }
 sub minspareservers     { $cfg->param('apache.minspareservers') || 1 }

@@ -51,11 +51,19 @@ $CBROOT/bin/make_configs
 WORKERS=`$CBROOT/bin/cbconfig maxclients`
 PORT=`$CBROOT/bin/cbconfig port`
 KEEPALIVETIMEOUT=`$CBROOT/bin/cbconfig keepalivetimeout`
+KEEPALIVE=`$CBROOT/bin/cbconfig keepalive`
+
+if [ $KEEPALIVE -gt 0 ]; then
+   KEEPALIVE=""
+else
+   KEEPALIVE="--disable-keepalive"
+fi
+
 
 exec $CBROOT/bin/perl `which starman` \
     --preload-app \
     -I$CBROOT/lib -I$CBROOTLOCAL/lib \
-    --keepalive-timeout=$KEEPALIVETIMEOUT \
+    $KEEPALIVE --keepalive-timeout=$KEEPALIVETIMEOUT \
     --workers=$WORKERS \
     --port=$PORT $@ \
     app.psgi
