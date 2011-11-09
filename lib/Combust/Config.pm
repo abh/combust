@@ -132,7 +132,7 @@ sub base_url {
       cluck "servername not defined for site [$sitename]";
       return;
   }
-  my $port = $self->external_port || 80;
+  my $port = $self->site->{$sitename}->{port} || $self->external_port || 80;
   my $protocol = 'http';
   $protocol = 'https' if $port and $port == 443;
   $protocol = $self->external_protocol if $self->external_protocol;
