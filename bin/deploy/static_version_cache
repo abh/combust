@@ -84,9 +84,7 @@ sub get_git_tree {
     my $old_dir = getcwd();
     chdir("$root/$dir");
 
-    my $treeish = `git rev-list --max-count=1 --all --topo-order`;
-    chomp $treeish;
-    my $command = "git ls-tree --abbrev -r $treeish $dir";
+    my $command = "git ls-tree --abbrev -r HEAD $dir";
     my $git = `$command`;
     my @submodules;
 
