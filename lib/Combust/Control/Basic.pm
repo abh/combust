@@ -6,6 +6,7 @@ use Combust::Template::Provider;
 use LWP::MediaTypes qw(guess_media_type);
 use IO::File;
 use Combust::Constant qw(OK DONE);
+use IO::Compress::Gzip qw(gzip $GzipError);
 
 use base qw(Class::Accessor::Fast);
 __PACKAGE__->mk_accessors(qw(force_template_processing));
@@ -86,7 +87,29 @@ sub serve_static_file {
 
         my $mtime = (stat($fh))[9];
         $self->request->update_mtime($mtime);
-        return OK, $fh, $content_type;
+
+        my $is_text = $content_type =~ m!^(text/|application/json$)!;
+        my $wants_gzip = $is_text && ($self->request->header_in('Accept-Encoding') || '') =~ m/\bgzip\b/;
+
+        if ($is_text) {
+            $self->request->header_out(
+                                       'Vary' => join ", ",
+                                       grep {$_} $self->request->header_out('Vary'), 'Accept-Encoding'
+                                      );
+        }
+        
+        unless ($wants_gzip) {
+            return OK, $fh, $content_type
+        }
+
+        my $compressed;
+        gzip $fh => \$compressed
+          or die "gzip failed: $GzipError\n";
+        
+        $self->request->header_out('Content-Encoding' => 'gzip');
+
+        return OK, $compressed, $content_type;
+
     }
     else {
         if ($self->tt->provider->is_directory($file)) {
