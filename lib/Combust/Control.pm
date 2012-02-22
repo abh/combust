@@ -308,34 +308,35 @@ sub send_output {
   }
 
   my $length;
-  if (ref($output) and reftype($output) eq "GLOB") {
-    $length = ( stat($output) )[7]
-      unless tied(*$output);    # stat does not work on tied handles
+
+  my $is_text = $content_type =~ m!^(text/|application/json$)!;
+
+  if (!$is_text and ref($output) and reftype($output) eq "GLOB") {
+      $length = (stat($output))[7]
+        unless tied(*$output);    # stat does not work on tied handles
   }
   else {
-    if ($content_type =~ m!^(text/|application/json$)!) {
 
-       # eek - this is certainly not correct, but seems to have worked for us...
-        $output = encode_utf8($output);
+      # forcing encode_utf8 seems to work, but probably isn't right.
+      if ($is_text and !ref $output) {
+          $output = encode_utf8($output);
+      }
 
-        if (($self->request->header_in('Accept-Encoding') || '') =~ m/\bgzip\b/) {
-            my $compressed;
-            gzip \$output => \$compressed
-              or die "gzip failed: $GzipError\n";
-            $output = $compressed;
+      if ($is_text and ($self->request->header_in('Accept-Encoding') || '') =~ m/\bgzip\b/) {
+          my $compressed;
+          gzip((ref $output ? $output : \$output), \$compressed)
+            or die "gzip failed: $GzipError\n";
+          $output = $compressed;
 
-            $self->request->header_out('Content-Encoding' => 'gzip');
-        }
-
-        $self->request->header_out(
-            'Vary' => join ", ",
-            grep {$_} $self->request->header_out('Vary'), 'Accept-Encoding'
-        );
-
+          $self->request->header_out('Content-Encoding' => 'gzip');
+          $self->request->header_out(
+              'Vary' => join ", ",
+              grep {$_} $self->request->header_out('Vary'), 'Accept-Encoding'
+          );
     }
 
-      # length in bytes
-      $length = do { use bytes; length($output) };
+    # length in bytes
+    $length = do { use bytes; length($output) };
   }
 
   $self->request->header_out('Content-Length' => $length)

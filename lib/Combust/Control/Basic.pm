@@ -88,28 +88,7 @@ sub serve_static_file {
         my $mtime = (stat($fh))[9];
         $self->request->update_mtime($mtime);
 
-        my $is_text = $content_type =~ m!^(text/|application/json$)!;
-        my $wants_gzip = $is_text && ($self->request->header_in('Accept-Encoding') || '') =~ m/\bgzip\b/;
-
-        if ($is_text) {
-            $self->request->header_out(
-                                       'Vary' => join ", ",
-                                       grep {$_} $self->request->header_out('Vary'), 'Accept-Encoding'
-                                      );
-        }
-        
-        unless ($wants_gzip) {
-            return OK, $fh, $content_type
-        }
-
-        my $compressed;
-        gzip $fh => \$compressed
-          or die "gzip failed: $GzipError\n";
-        
-        $self->request->header_out('Content-Encoding' => 'gzip');
-
-        return OK, $compressed, $content_type;
-
+        return OK, $fh, $content_type
     }
     else {
         if ($self->tt->provider->is_directory($file)) {
