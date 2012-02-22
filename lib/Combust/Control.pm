@@ -313,7 +313,7 @@ sub send_output {
       unless tied(*$output);    # stat does not work on tied handles
   }
   else {
-    if ($content_type =~ m!^text/!) {
+    if ($content_type =~ m!^(text/|application/json$)!) {
 
        # eek - this is certainly not correct, but seems to have worked for us...
         $output = encode_utf8($output);
