@@ -1,0 +1,151 @@
+# -*- cperl -*-
+# vim: ts=8:sw=2:expandtab
+eval 'exec $CBROOT/bin/perl $0 ${1+"$@"}'
+  if my $running_under_some_shell;
+use strict;
+use warnings;
+use Combust::Config;
+use Combust::StaticFiles;
+
+use List::Util qw(max);
+use File::Find::Rule;
+use File::Path qw(mkpath);
+use File::Basename qw(fileparse);
+use File::Copy qw(move);
+use Combust::Util qw(run);
+use Digest::MD5 ();
+
+my $config = Combust::Config->new;
+
+my $work_path = $config->work_path;
+mkpath $work_path;
+$work_path = $work_path . "/gzip.$$";
+mkpath $work_path or die "Could not create $work_path: $!";
+
+my @sites = $config->sites_list;
+
+my %paths_done;
+
+for my $site (@sites) {
+
+    my $static = Combust::StaticFiles->new( site => $site );
+    my $docs_path = $static->find_static_path($site);
+    next unless $docs_path;
+
+    next if $paths_done{$docs_path}++;
+
+    my $finder = File::Find::Rule->new;
+
+    # don't minimize the extjs and yui files (they should already be...)
+    my @files = 
+      $finder->or( $finder->new->directory->name('extjs', 'yui', '.g', 'cdn', 'd3')->prune->discard,
+                   $finder->new->file()->name( '*.js', '*.css' )
+                 )->in( $docs_path );
+    
+    for my $file ( @files ) {
+        next if $file =~ m/[\.-]min\.([^\.]+)$/;
+        if (different_mtime( min_name($file), $file))  {
+            minimize($file);
+        }
+    }
+
+    my $group_versions = {};
+    my $group_versions_file = "$docs_path/.static.versions.extra.json";
+    $group_versions = $static->_load_json($group_versions_file) if -e $group_versions_file;
+
+    my $group_path = "$docs_path/.g";
+
+    for my $group ($static->static_groups) {
+        my $data = $static->static_group_data($group);
+
+        #warn Data::Dumper->Dump([\$data], [qw(data)]);
+
+        my ($group_file, $dir) = fileparse($group);
+
+        my @files = 
+          map { $_ = "$docs_path/$_";
+                my $min_name = min_name($_);
+                -e $min_name ? $min_name : $_;
+            }
+            grep { $_ !~ m( /! )x } 
+            @{ $data->{files} };
+
+        #warn Data::Dumper->Dump([\@files], [qw(files)]);
+
+        my $group_mtime = max(map { (stat( $_ ))[9] 
+                                      or die "FATAL ERROR: Could not find $_ from the $group group!\n"
+                                  }
+                              (@files, "$docs_path/.static.groups.json")
+                             );
+
+        -d "$group_path/$dir" 
+          or mkpath "$group_path/$dir"
+          or die "Could not create $group_path/$dir: $!";
+
+        my $group_filename = "$group_path/$dir/$group_file";
+
+        my $group_file_mtime = (stat($group_filename))[9];
+        next if ($group_file_mtime and $group_file_mtime == $group_mtime);
+
+        open my $group_fh, '+>', "$group_filename.tmp" or die "Could not create $group_filename: $!";
+        
+        for my $file (@files) {
+            open my $fh, '<', $file or die "Could not open $file: $!";
+
+            # temporarily for debugging, take out when we're happy with the group files
+            $file =~ s/\Q$docs_path\E\/?//;
+            print $group_fh "\n/* $file */\n";
+            while (<$fh>) {
+                print $group_fh $_;
+            }
+            print $group_fh "\n";
+        }
+
+        my $md5 = Digest::MD5->new;
+        seek($group_fh, 0, 0);
+        $md5->addfile($group_fh);
+
+        $group_versions->{"/.g/" . $group} = ($md5->hexdigest =~ m/^(.{10})/)[0];
+
+        close $group_fh;
+        utime $group_mtime, $group_mtime, "$group_filename.tmp";
+
+        rename "$group_filename.tmp", $group_filename
+          or die "Could not rename $group_filename.tmp to $group_filename: $!";
+
+    }
+
+    $static->_save_json($group_versions_file, $group_versions);
+}
+
+rmdir $work_path;
+
+
+
+sub min_name {
+    my $file = shift;
+    return $file if $file =~ m/-min\.([^\.]+)$/;
+    $file =~ s/(\.[^\.]+)$/-min$1/;
+    return $file;
+}
+
+sub different_mtime {
+    my ($f1, $f2) = @_;
+    return 0 if (((stat($f1))[9] || 0) == ((stat($f2))[9] || 0));
+    return 1;
+}
+
+sub minimize {
+    my $file_orig = shift;
+    my ($file, $dir) = fileparse($file_orig);
+    print "Minimizing $file_orig\n";
+
+    my $tmp_file = "$work_path/" . min_name($file);
+
+    run("$ENV{CBROOT}/bin/deploy/yuicompressor", '-o', $tmp_file, $file_orig);
+
+    my ($atime, $mtime) = (stat($file_orig))[8,9];
+    utime $atime, $mtime, $tmp_file;
+
+    move($tmp_file, "$dir/") or die "Could not move $tmp_file $dir: $!";
+}
