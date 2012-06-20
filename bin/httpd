@@ -42,6 +42,10 @@ if test -e $CBROOTLOCAL/bin/httpd_setup -a -x $CBROOTLOCAL/bin/httpd_setup; then
    fi
 fi
 
+if [ -d $CBROOTLOCAL/cpan/bin ]; then
+   PATH=$CBROOTLOCAL/cpan/bin:$PATH
+fi
+
 $CBROOT/bin/deploy/static_version_cache
 
 mkdir -p $WORK_PATH/htdocs && mkdir -p $WORK_PATH/ctpl && mkdir -p $LOG_PATH && \
