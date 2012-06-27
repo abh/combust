@@ -36,6 +36,7 @@ our $Domain  = 'unix';
 our $sayfh   = \*STDERR;
 our $saywarn = 0;
 our $utf8    = 1;
+our $Pretty  = 0;
 our $done_syslog;
 our $LogToFile;
 our $ShowExitBanner;
@@ -155,6 +156,7 @@ sub logsay {
 
 sub logtrace {
   return unless $Verbose > 2;
+  local $Pretty = 1;
   chomp(my $msg = _format(@_));
   _syslog "info", $msg;
   local $\;
@@ -163,6 +165,7 @@ sub logtrace {
 
 sub logdebug {
   return unless $Verbose > 4;
+  local $Pretty = 1;
   chomp(my $msg = _format(@_));
   _syslog "debug", $msg;
   local $\;
@@ -191,7 +194,7 @@ sub logtimes {
 sub _format {
     my @args = @_;
     #warn Data::Dumper->Dump([\@_], [qw(_)]);
-    my $msg = join " ", map { ref $_ ? $json->encode($_) : defined $_ ? $_ : 'UNDEF' } @args;
+    my $msg = join " ", map { ref $_ ? $json->pretty($Pretty)->encode($_) : defined $_ ? $_ : 'UNDEF' } @args;
     if ($utf8) {
         # Our output streams are utf8. If string is not already utf8 and
         # does not decode as valid utf8, then upgrade from latin1
