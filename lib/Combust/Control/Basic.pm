@@ -76,6 +76,9 @@ sub serve_static_file {
     my $file = $uri;
     substr($file,0,1) = ""; # trim leading slash
 
+    $file = _canonicalize_path($file);
+    return 400 if $file =~ m{^\.\.};
+
     my $content_type;
 
     my $data = $self->tt->provider->expand_filename($file);
@@ -110,6 +113,30 @@ sub fixup_static_version {
         $self->request->header_out('Cache-Control', "max-age=${max_age},public");
         $self->request->path($uri);
     }
+}
+
+sub _canonicalize_path {
+    my $path = shift;
+    my @parts;
+
+    # from Mojo::Path
+    for my $part (split '/', $path, -1) {
+        # ".."
+        if ($part eq '..') {
+            unless (@parts && $parts[-1] ne '..') { push @parts, '..' }
+            else                                  { pop @parts }
+            next;
+        }
+
+        # "."
+        next if $part eq '';
+        next if $part eq '.';
+
+        # Part
+        push @parts, $part;
+    }
+
+    return join "/", @parts;
 }
 
 sub deadlink_handler {
