@@ -33,6 +33,7 @@ sub run {
 
 sub utf8_safe {
     my $text = shift;
+    return unless defined $text;
     $text = Encode::decode("windows-1252", $text)
       unless utf8::is_utf8($text)
           or utf8::decode($text);
