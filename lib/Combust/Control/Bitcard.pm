@@ -10,7 +10,7 @@ sub bc_check_login_parameters {
     my $self = shift;
     if ($self->req_param('sig') or $self->req_param('bc_id')) {
         my $bc = $self->bitcard;
-        my $bc_user = eval { $bc->verify($self->r) };
+        my $bc_user = eval { $bc->verify( { %{ $self->request->parameters } }) };
         warn $@ if $@;
         unless ($bc_user) {
             warn "Authen::Bitcard error: ", $bc->errstr;
@@ -48,14 +48,14 @@ sub _setup_user {
 
 sub is_logged_in {
     my $self = shift;
-    my $user_info = $self->user;
-    return 1 if $user_info and $user_info->{id};
+    my $user = $self->user;
+    return 1 if $user and $user->id;
     return 0;
 }
 
 sub bitcard {
   my $self = shift;
-  my $site = $self->r->dir_config("site");
+  my $site = $self->request->site;
   my $bitcard_token = $self->config->site->{$site}->{bitcard_token};
   my $bitcard_url   = $self->config->site->{$site}->{bitcard_url};
   unless ($bitcard_token) {
@@ -110,6 +110,7 @@ sub logout {
     my $self = shift;
     my $uri  = shift || '/';
     $self->cookie($cookie_name, 0);
+    $self->no_cache(1);
     $self->user(undef);
     return OK, $self->onepixelgif, 'image/gif' if $self->req_param('bc-logout');
     $uri = $self->config->base_url($self->site) . $uri
@@ -134,6 +135,10 @@ sub user {
       # Class::DBI
       $user = $self->bc_user_class->retrieve($uid);
   }
+  elsif ($self->bc_user_class->can('find')) {
+      # DBIx::Class
+      $user = $self->bc_user_class->find($uid);
+  }
   elsif ($self->bc_user_class->can('fetch')) {
       # RDBO with combust helpers
       $user = $self->bc_user_class->fetch(id => $uid);
@@ -143,8 +148,6 @@ sub user {
   $self->cookie($cookie_name, '0');
   return;
 }
-
-
 
 
 1;

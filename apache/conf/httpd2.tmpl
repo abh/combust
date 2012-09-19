@@ -1,10 +1,8 @@
 [% # -*- apache -*- %]
 [% dont_edit # add warning; do edit *THIS* file.. ;-) %]
 
-ServerRoot          "[% root_default %]/apache/"
 PidFile             "[% config.log_path %]/httpd.pid"
 
-Timeout             300
 KeepAlive           [% config.keepalive %]
 KeepAliveTimeout    [% config.keepalivetimeout %]
 StartServers        [% config.startservers %]
@@ -12,62 +10,18 @@ MaxClients          [% config.maxclients %]
 MaxRequestsPerChild [% config.maxrequestsperchild %]
 Listen              [% config.port %]
 
-[%# We always need mod_perl, and apreq is weird (module is apreq but
-file is apreq2) so don't allow it to be configured. %]
-LoadModule perl_module [% apache_modules %]/mod_perl.so
-LoadModule apreq_module [% apache_modules %]/mod_apreq2.so
-
-[% FOR apache_module = config.apache_modules %]
-LoadModule [% apache_module %]_module   [% apache_libexec %]/mod_[% apache_module %].so
-[% END %]
-
 TypesConfig [% root %]/apache/conf/mime.types
 
 AddOutputFilterByType DEFLATE text/html text/plain text/xml
 AddOutputFilterByType DEFLATE text/javascript text/css 
 AddOutputFilterByType DEFLATE application/xhtml+xml application/rss+xml
 
-PerlOptions +GlobalRequest
-
-PerlPassEnv CBROOT
-PerlPassEnv CBROOTLOCAL
-PerlPassEnv CBCONFIG
-PerlPassEnv DBI_PROFILE
-PerlPassEnv DBI_TRACE
-
 PerlRequire [% root %]/apache/conf/startup.pl
-PerlWarn On
-
-[% IF config.apache_reload %]
-PerlModule Apache2::Reload
-PerlInitHandler Apache2::Reload
-[%   IF config.apache_reload > 1 %]
-PerlSetVar ReloadDebug On
-[%   END %]
-[% END %]
-
-ExtendedStatus On
 
 LogLevel [% config.apache_loglevel %]
 
 LogFormat "%h %V %u %t %{site}n \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined
 LogFormat "%h %V %u %t \"%r\" %>s %b" common
-
-[% IF config.use_cronolog %]
-  [% log_path = config.log_path;
-     cronolog_access      = config.cronolog_template.replace("LOGFILE","access");
-     cronolog_error       = config.cronolog_template.replace("LOGFILE","error");
-     cronolog_access_params = config.cronolog_params.replace("LOGFILE","access");
-     cronolog_error_params  = config.cronolog_params.replace("LOGFILE","error");
-     cronolog_access_params = cronolog_access_params.replace("LOGDIR", log_path);
-     cronolog_error_params  = cronolog_error_params.replace("LOGDIR",  log_path);
-  %]
-  ErrorLog  "|[% config.cronolog_path %] [% config.log_path %]/[% cronolog_error  %] [% cronolog_error_params  %]"
-  CustomLog "|[% config.cronolog_path %] [% config.log_path %]/[% cronolog_access %] [% cronolog_access_params %]" combined
-[% ELSE %]
-  ErrorLog  [% config.log_path %]/error_log
-  CustomLog [% config.log_path %]/access_log combined
-[% END %]
 
 PerlPostReadRequestHandler ProxyIP
 
@@ -85,11 +39,6 @@ NameVirtualHost *:[% config.port %]
     SetHandler perl-script
     PerlSetVar UseDocumentRoot 1
     PerlResponseHandler Combust::Control::Basic->super
-  </Location>
-
-  <Location /error/>
-     SetHandler   perl-script
-     PerlResponseHandler Combust::Control::Error->super
   </Location>
 
 </VirtualHost>

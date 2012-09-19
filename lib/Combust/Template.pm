@@ -39,7 +39,7 @@ sub _init {
 
     my %provider_config = (
         PARSER      => $parser,
-        COMPILE_EXT => '.ttc',
+        COMPILE_EXT => '.ttcache',
         COMPILE_DIR => $config->work_path . "/ctpl",
         UNICODE     => 1,
         ENCODING    => 'utf-8',
@@ -77,7 +77,7 @@ sub _init {
         #               http => 1,
         #		    default => 1,
         #	            },
-        'PRE_PROCESS' => 'tpl/defaults',
+        'PRE_PROCESS' => [ 'tpl/combust_defaults', 'tpl/defaults' ],
         'PROCESS'     => 'tpl/wrapper',
         'PLUGIN_BASE' => 'Combust::Template::Plugin',
         # 'DEBUG'  => DEBUG_VARS | DEBUG_DIRS | DEBUG_STASH

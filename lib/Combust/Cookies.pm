@@ -33,11 +33,13 @@ sub new {
   my $class = ref $proto || $proto;
   my $r = shift;
   my %args = @_;
-  my $self = bless( { r => $r,
+  my $self = bless( { request => $r,
                       domain => $args{domain}
                     }, $class);
   return $self;
 }
+
+sub request { shift->{request} };
 
 sub changed {
   my ($self, $cookie, $val) = @_;
@@ -55,7 +57,7 @@ sub parse_cookies {
   my $parsed = {};
 
   for my $cookie_name ($default_cookie_name, keys %special_cookies) {
-    my $cookie = $self->{r}->cookie($cookie_name);
+    my $cookie = $self->request->cookies->{$cookie_name};
     next unless $cookie;
 
     $cookie =~ s/\r$// if $cookie;  # remove occasional trailing ^M
@@ -103,8 +105,6 @@ sub cookie {
 sub bake_cookies {
   my $self = shift;
 
-  my $r = $self->{r};
-
   #warn Data::Dumper->Dump([\$self], [qw(self)]);
 
   my $ts = time;
@@ -143,12 +143,16 @@ sub bake_cookies {
     # 3/ is the version
     $encoded = "3/$ts/$encoded/$cs";
 
-    #warn "[$cookie_name] encoded: [$encoded]";
+    warn "[$cookie_name] encoded: [$encoded]" if $DEBUG > 1;
 
-    $self->{r}->cookie($cookie_name, $encoded, { expires => '+180d',
-                                                 domain => $self->{domain} });
+    $self->request->set_cookie( $cookie_name, $encoded,
+                                { expires => ( time + 180 * 60 * 60 ),
+                                  domain => $self->{domain},
+                                  path  => '/',
+                                }
+                              );
   }
-  $self->{r}->bake_cookies;
+  1;
 }
 
 

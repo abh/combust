@@ -4,8 +4,10 @@ eval 'exec $CBROOT/bin/perl $0 ${1+"$@"}'
 use strict;
 use warnings;
 use Combust::DB qw(db_open);
+use Combust::Util qw(run);
 use Getopt::Long qw(GetOptions);
 use List::Util qw(first);
+use File::Basename qw(dirname);
 
 =head1 database_update
 
@@ -68,6 +70,8 @@ my $dbh = db_open($database);
 
 $dbh->{PrintError} = 0; # RaiseError does this already
 
+my $script_path;
+
 my %rev;
 {
     my $cur_rev;
@@ -76,6 +80,7 @@ my %rev;
     my $filename = first { -f $_ } @files;
     die "Could not find sql/$database.update file\n" unless $filename;
     open my $fh, "<", $filename or die "Could not open $filename: $!";
+    $script_path = dirname($filename) . "/scripts/$database";
     while (<$fh>) {
         if (my ($new_rev, $options) = (m/^\#(\d+|todo)\s*(.*)/i)) {
             $rev{$cur_rev}->{sql} = _split_sql($sql) if $cur_rev and $sql;
@@ -134,8 +139,11 @@ if ($latest_version > $db_version) {
     #warn Data::Dumper->Dump([\$x], [qw(x)]);
     local $dbh->{RaiseError} = 0 if $rev{$r}->{try};
     for my $c (@{ $rev{$r}->{sql} }) {
-      my @tables;
       do_sql($c);
+    }
+    my $script = "$script_path.$r";
+    if (-f $script) {
+        run($script);
     }
     update_db_version($r);
   }
@@ -162,17 +170,22 @@ sub get_latest_version {
 }
 
 sub get_db_version {
+
+  my $setup = 0;
+
+  REDO:  
   my ($revision) = eval { $dbh->selectrow_array(q[select revision from schema_revision where schema_name=?], 
                                                 undef,
                                                 $database) };
   if (my $err = $@) {
       if ($err =~ m/doesn't exist/) {
-          print " -- Setting up schema_revision table; re-run to continue\n\n";
+          print " -- Setting up schema_revision table\n\n";
           do_sql(q[create table schema_revision (revision smallint unsigned not null default 0, ]
                   .q[schema_name varchar(30) not null primary key) ENGINE=InnoDB DEFAULT CHARSET=utf8;]);
           do_sql(q[insert into schema_revision (revision,schema_name) values (0,?)], $database);
           print "\n";
-          exit;
+          $setup++ and exit;
+          goto REDO;
       }
       elsif ($err =~ m/Unknown column 'schema_name'/) {
           print " -- Updating schema_revision table; re-run to continue\n\n";

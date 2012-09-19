@@ -132,7 +132,7 @@ sub base_url {
       cluck "servername not defined for site [$sitename]";
       return;
   }
-  my $port = $self->external_port || 80;
+  my $port = $self->site->{$sitename}->{port} || $self->external_port || 80;
   my $protocol = 'http';
   $protocol = 'https' if $port and $port == 443;
   $protocol = $self->external_protocol if $self->external_protocol;
@@ -209,7 +209,7 @@ sub cronolog_template {
 }
 
 sub cronolog_params {
-  $cfg->param('cronolog_params') || "";
+  $cfg->param('cronolog_params') || "-l LOGDIR/LOGFILE.latest";
 }
 
 
@@ -276,7 +276,7 @@ sub root_docs {
 }
 
 sub docs_name {
-  $cfg->param('docs_name') || 'docs/live';
+  $cfg->param('docs_name') || 'docs';
 }
 
 sub job_servers {
@@ -311,7 +311,10 @@ sub memcached_servers {
 # apache configuration
 
 sub maxclients          { $cfg->param('apache.maxclients')      || 20 }
-sub keepalive           { $cfg->param('apache.keepalive')       || 'Off' }
+sub keepalive {
+    my $k = $cfg->param('apache.keepalive');
+    return ($k and lc $k ne 'off') ? 1 : 0;
+}
 sub keepalivetimeout    { $cfg->param('apache.keepalivetimeout')|| 300 }
 sub startservers        { $cfg->param('apache.startservers')    || 5 }
 sub minspareservers     { $cfg->param('apache.minspareservers') || 1 }

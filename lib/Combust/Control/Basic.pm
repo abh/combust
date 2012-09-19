@@ -4,7 +4,9 @@ use base 'Combust::Control';
 use Combust::Config;
 use Combust::Template::Provider;
 use LWP::MediaTypes qw(guess_media_type);
+use IO::File;
 use Combust::Constant qw(OK DONE);
+use IO::Compress::Gzip qw(gzip $GzipError);
 
 use base qw(Class::Accessor::Fast);
 __PACKAGE__->mk_accessors(qw(force_template_processing));
@@ -16,11 +18,9 @@ LWP::MediaTypes::read_media_types( $config->root . "/apache/conf/mime.types");
 sub render {
   my $self = shift;
 
-  my $r = $self->r;
-
   my $template = '';
 
-  my $uri = $self->request->uri;
+  my $uri = $self->request->path;
 
   # Don't serve special files:
   #    Normally, we want to use DirectoryMatch for this, but URI->File
@@ -31,13 +31,11 @@ sub render {
   # combust.
 
   # Some special handlers
-  return $self->deadlink_handler($r)
+  return $self->deadlink_handler()
     if $uri =~ m{^/!dl/.*};
 
   # Equivalent of Apache's DirectoryIndex directive
   $uri =~ s!/$!/index.html!;
-
-  # TODO|FIXME: set last_modified_date properly!  
 
   if (!$self->force_template_processing and $uri !~ m!/(.*\.(?:html?))$!) {
       return $self->serve_static_file;
@@ -48,7 +46,6 @@ sub render {
   if ($uri =~ m!^/((?:[^/]+/)*[^/]+)$!) {
     $template = $1; 
     $template =~ s/\.\.+//g;
-    #warn "TEMPLATE: $template";
     $content_type = guess_media_type($template) || 'text/html';
   }
   else {
@@ -56,16 +53,13 @@ sub render {
   }    
 
   my $output = eval { $self->evaluate_template($template); };
-  unless(defined $output) {
-    my $err = $self->tt->error || $@;
-    $r->pnotes('error', $err);
+  if (my $err = $@ or !defined $output) {
+    warn "TT ERROR: ",  $self->tt->error;
+    warn "ERROR: $err";
+    $self->request->notes('error', $err);
     return 404 if $err =~ m/: not found/;
-    return 500; 
+    return 500;
   }
-
-  # TODO: this code can be tossed out, I think ...
-  $content_type = $r->pnotes('combust_notes')->{response}{content_type}
-    if defined $r->pnotes('combust_notes')->{response}{content_type};
 
   return OK, $output, $content_type;
 }
@@ -73,16 +67,9 @@ sub render {
 sub serve_static_file {
     my $self = shift;
 
-    my $r   = $self->r;
-    my $uri = $self->request->uri; 
+    $self->fixup_static_version;
 
-    if ($uri =~ s!^(/.*)\.v[0-9a-f.]+\.(js|css|gif|png|jpg|htc|ico)$!$1.$2!) {
-        my $max_age = 315360000; # ten years
-        $self->request->header_out('Expires', HTTP::Date::time2str( time() + $max_age ));
-        $self->request->header_out('Cache-Control', "max-age=${max_age},public");
-        $self->request->uri($uri);
-    }
-
+    my $uri = $self->request->path;
 
     # if the filename does not end in .html, then do not process it
     # with TT and just send it.
@@ -97,11 +84,14 @@ sub serve_static_file {
     my $data = $self->tt->provider->expand_filename($file);
     #warn Data::Dumper->Dump([\$data],[qw(data)]);
     if ($data->{path}) {
-        $r->update_mtime($data->{time} || time);
         $content_type = guess_media_type($data->{path});
-        my $fh;
-        open $fh, $data->{path} or warn "Could not open $data->{path}: $!" and return 403;
-        return OK, $fh, $content_type;
+        my $fh = IO::File->new($data->{path}, "r")
+          or warn "Could not open $data->{path}: $!" and return 403;
+
+        my $mtime = (stat($fh))[9];
+        $self->request->update_mtime($mtime);
+
+        return OK, $fh, $content_type
     }
     else {
         if ($self->tt->provider->is_directory($file)) {
@@ -150,11 +140,12 @@ sub _canonicalize_path {
 }
 
 sub deadlink_handler {
-  my ($self, $r) = @_;
+  my $self = shift;
+  my $r = $self->request;
 
   # it's possible this should be an entirely seperate handler, but
   # that seems like overkill.
-  $r->uri =~ m{^/!dl/(.*)$};
+  $r->path =~ m{^/!dl/(.*)$};
   my $url = $1;
 
   # some simple validation
@@ -174,9 +165,7 @@ sub deadlink_handler {
   }
 
   my $output = $self->evaluate_template($template);
-  $r->update_mtime(time);
-  $self->send_output($output, "text/html");
-  return DONE;
+  return OK, $output, "text/html";
 }
 
 1;

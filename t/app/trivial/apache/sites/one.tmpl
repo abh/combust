@@ -1,0 +1,26 @@
+<VirtualHost *:[% config.port %]>
+    PerlSetVar site [% site %]
+    ServerName [% config.site.${site}.servername %]
+    [% expandServerAliases( config.site.${site}.aliases ) %]
+
+    <Location /one>
+       SetHandler perl-script
+       PerlResponseHandler Trivial::Control::One->super
+    </Location>
+
+    <Location />
+       SetHandler perl-script
+       PerlResponseHandler Combust::Control::Basic->super
+    </Location>
+
+    <Location /two>
+       SetHandler perl-script
+       PerlResponseHandler +Trivial::Control::Two->super
+    </Location>
+
+    <Location /two/redirect>
+       SetHandler perl-script
+       PerlResponseHandler Trivial::Control::Two->super
+    </Location>
+
+</VirtualHost>

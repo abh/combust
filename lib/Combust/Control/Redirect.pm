@@ -1,71 +1,117 @@
 package Combust::Control::Redirect;
-use strict;
-use base 'Combust::Control';
+use Moose;
+extends 'Combust::Control';
+use Combust::Constant qw(DECLINED OK);
 
-# this should really be more extensible and dispatch to subclasses
-# instead of hardcoding things here.
+my $map = {};
 
-my %bookstores =
-  ( 'amazon' => 'http://www.amazon.com/exec/obidos/ASIN/#ISBN#/develooper',
-    'amazonuk' => 'http://www.amazon.co.uk/exec/obidos/ASIN/#ISBN#/develooper-21',
-    'fatbrain' => 'http://www1.fatbrain.com/asp/bookinfo/bookinfo.asp?theisbn=#ISBN#&from=VFK102',
-    'bn' => 'http://service.bfast.com/bfast/click?bfmid=2181&sourceid=38537477&bfpid=#ISBN#&bfmtype=book',
-    'powells' => 'http://www.powells.com/partner/25774/biblio/#ISBN#',
-    # bookpool appears to have gone under
-    'bookpool' => 'http://www.bookpool.com/.x/SSSSSS_C200/sm/#ISBN#',
-  );
+sub redirect_reload {
+  my ($self, $file) = @_;
 
-my %sites =
-  ( ticketmaster => "http://www.ticketmaster.com/",
-    citysearch   => "http://www.citysearch.com/",
-    # ...
-  );
+  #warn "Checking file $file";
 
-sub find_url {
+  my $mtime = (stat($file))[9];
+  unless ($mtime) {
+    #warn "could not find file: $file";
+    delete $map->{$file};
+    return;
+  }
+
+  #warn "mtime: $mtime, last update: ", $map->{$file}->{update};
+
+  return if $map->{$file}->{update}
+    and $map->{$file}->{update} > $mtime;
+
+  $map->{$file}->{update} = time;
+
+  #warn "reloading $file";
+
+  my $site_rules = [];
+  if (open MAP, $file) {
+    while (<MAP>) {
+      #warn ":: $_\n";
+      next unless (my ($regexp, $url, $option) = $_ =~ m/(\S+)\s+(\S+)(?:\s*(\S+))?/);
+      $regexp =~ s/^/\^/ unless $regexp =~ m/^\^/;
+      $regexp =~ s/$/\$/ unless $regexp =~ m/\$$/;
+      $option ||= '';
+      $option = "I" if $option =~ m/^int/i;
+      $option = "P" if $option =~ m/^per/i;
+      $option = "" unless $option =~ m/^[IP]$/;
+      #warn "regexp: $regexp => $url";
+      $regexp = qr/$regexp/;
+      push @{$site_rules}, [$regexp, $url, $option];
+    }
+    close MAP;
+  } 
+  else {
+    warn "Could not open url map file $file: $!";
+  } 
+  $map->{$file}->{rules} = $site_rules;
+}
+
+my $stat_check = 0;
+my %files;
+
+sub rewrite {
   my $self = shift;
 
-  my $type = $self->req_param('type') || $self->req_param('url');
+  my $request = $self->request;
 
+  my $site = $request->site;
+  my $uri  = $request->uri;
 
-  if ($type eq "book") {
-    my $isbn = $self->req_param('isbn') || $self->req_param('bookisbn');
-    die "Invalid ISBN" unless $isbn =~ /^[A-Z0-9]+$/;
-    my $shop = $self->req_param('shop') || $self->req_param('bookstore');
-    die "Unknown Bookstore: $shop"
-     unless exists $bookstores{ $shop };
-    my $url = $bookstores{ $shop };
-    $url =~ s/\#ISBN\#/$isbn/e;
-    return $url;
+  # warn join " / ", "REDIRECT CHECK FOR $site", $uri;
+
+  my $path = $self->get_include_path($request);
+  return DECLINED unless $path and $path->[0];
+
+  my $file;
+
+  if (time - 30 > $stat_check) {
+      %files = ();
+      $stat_check = time;
   }
-  elsif ($self->req_param('type') eq "site") {
-    # can't use straight URLs, because they let us become an open
-    # bouncepoint for things.  So.. we've got to code sites.
-    # Eventually this should be in a .ht file or something.
-    die "Uniknown Site"
-      unless exists $sites{ $self->req_param('id') };
-    return $sites{ $self->req_param('id') };
+      
+  while (1) {
+    my $dir = shift @$path;
+    last unless $dir;
+    $file = "$dir/.htredirects";
+    my $exists = defined $files{$file} 
+      ? $files{$file} 
+      : $files{$file} = -e $file || 0;
+    last if $exists;
   }
-  return "";
+
+  #warn "FILE: $file";
+
+  $self->redirect_reload($file);
+  my $conf = $map->{$file} ? $map->{$file}->{rules} : undef; 
+
+  #warn Data::Dumper->Dump([\$conf],[qw(conf)]);
+
+  return DECLINED unless $conf and ref $conf eq "ARRAY";
+
+  for my $c (@$conf) {
+    if (my @n = ($uri =~ m/$c->[0]/)) {
+      my $url = eval qq["$c->[1]"];
+      #warn "need [$url]";
+      next unless $url;
+      if ($c->[2] eq "I") {
+          $request->env->{PATH_INFO} = $url; 
+          # warn "PATH1: ", $request->env->{PATH_INFO};
+      }
+      else {
+	return $self->redirect($url, $c->[2] eq "P" ? 1 : 0);
+      }
+    }
+    else {
+        # warn "no match";
+    }
+  }
+
+  return DECLINED;
+
 }
 
-
-sub render ($$) {
-  my ($self) = @_;
-
-  my $url;
-  eval { $url = $self->find_url() };
-  $self->notes(error => "$@") if $@;
-  die $@ if $@;
-  if ($url) {
-    return $self->redirect($url);
-  }
-  else {
-    # If we can't handle it, pass it to CC::Error, which will default
-    # to a 404.
-    return 404;
-    # return $self->Combust::Control::Error::render();
-  }
-
-}
 
 1;
