@@ -291,7 +291,8 @@ sub evaluate_template {
 my $ctemplate;
 
 sub tt {
-    $ctemplate ||= Combust::Template->new()
+    my $self = shift;
+    return $ctemplate ||= Combust::Template->new(@_)
       or die "Could not initialize Combust::Template object: $Template::ERROR";
 }
 

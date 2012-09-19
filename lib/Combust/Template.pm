@@ -65,6 +65,9 @@ sub _init {
           { 'navigation' => [ \&Combust::Template::Filters::navigation_filter_factory, 1 ],
             $args{filters} ? %{$args{filters}} : ()
           },
+
+        PLUGINS        => ($args{plugins} || {}),
+
         RELATIVE       => 1,
         LOAD_TEMPLATES => [$provider],
 

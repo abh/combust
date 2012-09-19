@@ -76,7 +76,7 @@ sub serve_static_file {
     my $r   = $self->r;
     my $uri = $self->request->uri; 
 
-    if ($uri =~ s!^(/.*)\.v[0-9a-f.]+\.(js|css|gif|png|jpg|ico)$!$1.$2!) {
+    if ($uri =~ s!^(/.*)\.v[0-9a-f.]+\.(js|css|gif|png|jpg|htc|ico)$!$1.$2!) {
         my $max_age = 315360000; # ten years
         $self->request->header_out('Expires', HTTP::Date::time2str( time() + $max_age ));
         $self->request->header_out('Cache-Control', "max-age=${max_age},public");
@@ -88,6 +88,9 @@ sub serve_static_file {
     # with TT and just send it.
     my $file = $uri;
     substr($file,0,1) = ""; # trim leading slash
+
+    $file = _canonicalize_path($file);
+    return 400 if $file =~ m{^\.\.};
 
     my $content_type;
 
@@ -108,6 +111,42 @@ sub serve_static_file {
             return 404;
         }
     }
+}
+
+sub fixup_static_version {
+    my $self = shift;
+    my $uri = $self->request->path;
+ 
+    if ($uri =~ s!^(/.*)\.v[0-9a-f.]+\.(js|css|gif|png|jpg|htc|ico)$!$1.$2!) {
+        my $max_age = 315360000; # ten years
+        $self->request->header_out('Expires', HTTP::Date::time2str( time() + $max_age ));
+        $self->request->header_out('Cache-Control', "max-age=${max_age},public");
+        $self->request->path($uri);
+    }
+}
+
+sub _canonicalize_path {
+    my $path = shift;
+    my @parts;
+
+    # from Mojo::Path
+    for my $part (split '/', $path, -1) {
+        # ".."
+        if ($part eq '..') {
+            unless (@parts && $parts[-1] ne '..') { push @parts, '..' }
+            else                                  { pop @parts }
+            next;
+        }
+
+        # "."
+        next if $part eq '';
+        next if $part eq '.';
+
+        # Part
+        push @parts, $part;
+    }
+
+    return join "/", @parts;
 }
 
 sub deadlink_handler {
