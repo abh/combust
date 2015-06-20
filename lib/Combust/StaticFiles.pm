@@ -157,7 +157,7 @@ sub static_url {
     $file or cluck "no filename specified to static_url" and return "";
     $file = "/$file" unless $file =~ m!^/!;
 
-    my $regexp = qr/(\.(js|css|gif|png|jpg|htc|ico))$/;
+    my $regexp = qr/(\.(js|css|gif|png|jpg|png|htc|ico))$/;
 
     my $file_attr;
 

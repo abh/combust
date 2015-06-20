@@ -107,7 +107,7 @@ sub fixup_static_version {
     my $self = shift;
     my $uri = $self->request->path;
  
-    if ($uri =~ s!^(/.*)\.v[0-9a-f.]+\.(js|css|gif|png|jpg|htc|ico)$!$1.$2!) {
+    if ($uri =~ s!^(/.*)\.v[0-9a-f.]+\.(js|css|gif|png|jpg|svg|htc|ico)$!$1.$2!) {
         my $max_age = 315360000; # ten years
         $self->request->header_out('Expires', HTTP::Date::time2str( time() + $max_age ));
         $self->request->header_out('Cache-Control', "max-age=${max_age},public");
