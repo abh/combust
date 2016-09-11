@@ -1,0 +1,36 @@
+# Manually kept in sync with dist.ini (!)
+# This is much easier to use than having to install Dist::Zilla and
+# the million dependencies just to get this list of dependencies ...
+Authen::Bitcard
+Cache::Memcached
+Class::Accessor::Class
+Config::General
+Config::Simple
+Data::Dumper
+DBI
+Digest::SHA
+File::Path
+HTML::Entities
+HTML::TagCloud
+HTTP::Date
+HTTP::Parser::XS
+IO::Compress::Gzip
+JSON::XS
+local::lib
+Module::Refresh
+Moose
+MooseX::NonMoose
+namespace::clean
+Plack
+Plack::Middleware::AccessLog
+Plack::Middleware::Options
+Plack::Middleware::XForwardedFor
+Pod::Simple
+Return::Value
+Router::Simple
+Starman
+Template
+Template::Plugin::Comma
+Template::Plugin::JSON
+Template::Plugin::Number::Format
+URI::Escape
