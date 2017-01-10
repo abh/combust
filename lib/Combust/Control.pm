@@ -245,8 +245,9 @@ my $ctemplate;
 
 sub tt {
     my $self = shift;
-    return $ctemplate ||= Combust::Template->new(@_)
-      or die "Could not initialize Combust::Template object: $Template::ERROR";
+    $ctemplate ||= Combust::Template->new(@_);
+    if (!$ctemplate) { die "Could not initialize Combust::Template object: $Template::ERROR"; }
+    return $ctemplate;
 }
 
 sub provider {
