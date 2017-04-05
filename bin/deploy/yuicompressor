@@ -2,12 +2,12 @@
 
 ulimit -v 3000000
 
-VERSION=2.4.7
+VERSION=2.4.8
 DIR=`$CBROOT/bin/cbconfig work_path`/yuicompressor
 JAR=$DIR/yuicompressor-$VERSION.jar
 if [ ! -e $JAR ]; then
    mkdir -p $DIR
-   curl -q -o $JAR.tmp http://mirrors.solfo.com/yuicompressor/yuicompressor-$VERSION/build/yuicompressor-$VERSION.jar && \
+   curl -q -o $JAR.tmp http://mirrors.develooper.com/yuicompressor/yuicompressor-$VERSION.jar && \
    mv $JAR.tmp $JAR
 fi
 
