@@ -7,7 +7,7 @@ DIR=`$CBROOT/bin/cbconfig work_path`/yuicompressor
 JAR=$DIR/yuicompressor-$VERSION.jar
 if [ ! -e $JAR ]; then
    mkdir -p $DIR
-   curl -q -o $JAR.tmp http://mirrors.develooper.com/yuicompressor/yuicompressor-$VERSION.jar && \
+   curl -sq -o $JAR.tmp http://mirrors.develooper.com/yuicompressor/yuicompressor-$VERSION.jar && \
    mv $JAR.tmp $JAR
 fi
 
