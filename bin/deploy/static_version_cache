@@ -33,7 +33,7 @@ for my $site (@sites) {
     my $json_file     = "$dir/.static.versions.json";
     if (! -w $json_file) {
         warn "$json_file not writable, skipping\n";
-        continue;
+        next;
     }
 
     chdir $dir or die "could not chdir to $dir";
