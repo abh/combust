@@ -349,5 +349,14 @@ sub apache_loglevel {
   $cfg->param('apache.loglevel') || "info";
 }
 
+sub static_headers {
+  my $self = shift;
+  my $sitename = shift or carp "sitename parameter required" and return;
+  my %headers = (
+    %{$cfg->get_block("headers-global")},
+    %{$cfg->get_block("headers-${sitename}")});
+  return %headers;
+}
+
 1;
 

@@ -98,6 +98,11 @@ default=1
 
 
 # Configure sites
+[headers-global]
+X-Frame-Options = deny
+
+[headers-www]
+X-Frame-Options = sameorigin
 
 [www]
 servername = new.c.askask.com
