@@ -99,6 +99,7 @@ sub get_git_tree {
              };
 
     for my $submodule (@submodules) {
+        next if $submodule eq $root; # prevent recursion
         my $sub = get_git_tree($submodule, '.');
         $sub = { map { ("/$submodule$_" => $sub->{$_}) } keys %$sub };
         $files = { %$files, %$sub };
