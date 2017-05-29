@@ -294,6 +294,11 @@ sub send_output {
 
   $self->cookies->bake_cookies;
 
+  my %headers = $config->static_headers($self->site);
+  while (my ($k, $v) = each %headers)  {
+    $self->request->header_out($k, $v);
+  }
+
   $self->request->header_out('P3P', q[CP="There's no P3P policy. Learn why here: http://www.w3.org/P3P/"]);
 
   if ($self->no_cache) {
