@@ -18,6 +18,10 @@ AddOutputFilterByType DEFLATE application/xhtml+xml application/rss+xml
 
 PerlRequire [% root %]/apache/conf/startup.pl
 
+ExtendedStatus Off
+ServerTokens Prod
+ServerSignature Off
+
 LogLevel [% config.apache_loglevel %]
 
 LogFormat "%h %V %u %t %{site}n \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined
