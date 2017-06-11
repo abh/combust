@@ -31,7 +31,10 @@ for my $site (@sites) {
 
     my $storable_file = "$dir/.static.versions.store";
     my $json_file     = "$dir/.static.versions.json";
-    if (! -w $json_file) {
+    if (-e $json_file && ! -w $json_file) {
+        # it's not clear why this is a good idea; probably
+        # the deployment script should decide if it wants
+        # to run this or not ...
         warn "$json_file not writable, skipping\n";
         next;
     }
