@@ -144,7 +144,7 @@ sub do_request {
   my ($status, $output, $cache);
 
   if ($cache_info->{id} 
-      && ($cache = Combust::Cache->new( type => ($cache_info->{type} || '') ))
+      && ($cache = Combust::Cache->new( type => ($cache_info->{type} || ''), ($cache_info->{backend} ? (backend => $cache_info->{backend}) : () )))
      ) {
     my $cache_data;
     $cache_data = $cache->fetch(id => $cache_info->{id})
