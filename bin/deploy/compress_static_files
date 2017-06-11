@@ -120,13 +120,17 @@ for my $site (@sites) {
 
 rmdir $work_path;
 
-
-
 sub min_name {
     my $file = shift;
     return $file if $file =~ m/-min\.([^\.]+)$/;
     $file =~ s/(\.[^\.]+)$/-min$1/;
     return $file;
+}
+
+sub map_name {
+    my $file = shift;
+    return $file if $file =~ m/\.(map)$/;
+    return $file . ".map";
 }
 
 sub different_mtime {
@@ -141,11 +145,22 @@ sub minimize {
     print "Minimizing $file_orig\n";
 
     my $tmp_file = "$work_path/" . min_name($file);
+    my $tmp_file_map = "$work_path/" . map_name($file);
 
-    run("$ENV{CBROOT}/bin/deploy/yuicompressor", '-o', $tmp_file, $file_orig);
+    if (-e "$ENV{CBROOTLOCAL}/bin/deploy/compressor") {
+        run("$ENV{CBROOTLOCAL}/bin/deploy/compressor",
+            $file_orig, $tmp_file, $tmp_file_map);
+    } else {
+        run("$ENV{CBROOT}/bin/deploy/yuicompressor", '-o', $tmp_file, $file_orig);
+    }
 
     my ($atime, $mtime) = (stat($file_orig))[8,9];
     utime $atime, $mtime, $tmp_file;
+
+    if (-e $tmp_file_map) {
+        utime $atime, $mtime, $tmp_file_map;
+        move($tmp_file_map, "$dir/") or die "Could not move $tmp_file_map $dir: $!";
+    }
 
     move($tmp_file, "$dir/") or die "Could not move $tmp_file $dir: $!";
 }
