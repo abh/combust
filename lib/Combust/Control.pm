@@ -318,7 +318,7 @@ sub send_output {
 
   my $is_text = $content_type =~ m!^(text/|application/json$)!;
 
-  if (!$is_text and ref($output) and reftype($output) eq "GLOB") {
+  if (ref($output) and reftype($output) eq "GLOB") {
       $length = (stat($output))[7]
         unless tied(*$output);    # stat does not work on tied handles
   }
