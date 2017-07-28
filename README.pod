@@ -1,7 +1,19 @@
+=encoding utf-8
 
-=head1 Combust README
+=head1 Combust
 
-See http://svn.perl.org/perl.org/docs/live/combust/ or the Combust
+Combust is a bit of Perl code to help run websites. Once upon a time
+in the early 2000s it helped smoothe over the mod_perl APIs. Since
+then we got Plack and other deliciousness. Combust now uses Plack, but
+all the smoothing over is just extra abstractions and under-documented
+"helpers" that are fine for things already using it, but a little
+crazy if you aren't already.
+
+If you are making something new in Perl you probably want Mojolicious.
+
+=head2 Code repository
+
+See https://github.com/abh/combust or the Combust
 website at http://combust.develooper.com/
 
 =head2 Copyright
