@@ -43,8 +43,9 @@ external_port = 0
 # use Template::Timer to insert timing information in the TT output (default 0)
 # template_timer = 1
 
-# path for log files and the httpd.pid file
-# log_path = apache/logs
+# path for log files. Set to "stdout" to log to stdout (error log will then
+# go to stderr, which is the default in any case).
+# log_path = logs
 
 # path for temporary work files (compiled template cache etc)
 # work_path = tmp

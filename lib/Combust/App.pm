@@ -110,21 +110,23 @@ sub init {
     $self->setup_mappings;
 }
 
-sub reference {
+sub _logfh {
     my $self = shift;
     $self->init;
-    my $app = sub { $self->exec(@_) };
 
     my $log_path = $config->log_path;
 
     my $logfh;
+
+    if ($log_path eq "stdout") {
+        return \*STDOUT;
+    }
 
     unless (-e $log_path) {
         mkpath($log_path, 1) or die qq[Could not create "$log_path": $!];
     }
 
     if ($config->use_cronolog) {
-
         my $path     = $config->cronolog_path;
         my $log_file = $log_path . "/" . $config->cronolog_template;
         my $err_file = $log_file;
@@ -157,6 +159,15 @@ sub reference {
             open STDERR, ">>", $err_file or die $!;
         }
     }
+
+    return $logfh;
+}
+
+sub reference {
+    my $self = shift;
+
+    my $app = sub { $self->exec(@_) };
+    my $logfh = $self->_logfh;
 
     $logfh->autoflush(1);
     STDERR->autoflush(1);

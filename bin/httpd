@@ -48,7 +48,7 @@ fi
 
 $CBROOT/bin/deploy/static_version_cache
 
-mkdir -p $WORK_PATH/htdocs && mkdir -p $WORK_PATH/ctpl && mkdir -p $LOG_PATH && \
+mkdir -p $WORK_PATH/htdocs && mkdir -p $WORK_PATH/ctpl && \
 rm -fr $WORK_PATH/ctpl/* && \
 $CBROOT/bin/make_configs
 
