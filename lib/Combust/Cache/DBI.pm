@@ -3,6 +3,7 @@ use strict;
 use Carp qw(carp);
 use Combust::DB qw(db_open);
 use Storable qw(nfreeze thaw);
+use Encode ();
 use vars qw($HAVE_ZLIB);
 
 BEGIN {
@@ -44,7 +45,7 @@ sub fetch {
 
   $row->{serialized} ||= 0;
 
-  $row->{data} = decode("utf8",Compress::Zlib::memGunzip($row->{data}))
+  $row->{data} = Encode::decode("utf8",Compress::Zlib::memGunzip($row->{data}))
     if $HAVE_ZLIB && $row->{serialized} & F_COMPRESS;
 
   if ($row->{serialized} & F_STORABLE) {
@@ -92,7 +93,7 @@ sub store {
 
   my $len = length($data);
   if ($HAVE_ZLIB && $len >= COMPRESS_THRESHOLD) {
-      my $c_val = Compress::Zlib::memGzip(encode("utf8",$data));
+      my $c_val = Compress::Zlib::memGzip(Encode::encode("utf8",$data));
       my $c_len = length($c_val);
       
       # do we want to keep it?
