@@ -6,7 +6,7 @@ use Plack::Request;
 use Combust::Config;
 use Combust::Site;
 use Combust::Request::Plack;
-use Combust::Constant qw(DECLINED); 
+use Combust::Constant qw(DECLINED);
 use File::Path qw(mkpath);
 
 my $config = Combust::Config->new;
@@ -15,7 +15,7 @@ use namespace::clean -except => 'meta';
 
 has sites => (
   is  => 'rw',
-  isa => 'HashRef[Combust::Site]', 
+  isa => 'HashRef[Combust::Site]',
   default => sub { {} },
 );
 
@@ -78,7 +78,6 @@ sub exec {
     my $request = $self->setup_request($env);
 
     #warn "ENV: ", pp(\$env);
-
     {
         if (my $rewriter = $self->rewriter) {
             $rewriter->request($request);
@@ -96,7 +95,6 @@ sub exec {
     }
 
     my $controller = $match->{controller}->new(request => $request);
-
     my $r = $controller->run($match->{action} || 'render');
 
     use Data::Dump qw(pp);
