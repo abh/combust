@@ -86,8 +86,12 @@ sub exec {
         }
     }
 
-    my $match = $request->site->router->match($request->env);
+    # todo: this is a little dubious, but ... practical?
+    if ($request->path eq "/combust-healthz") {
+        return [ 200, [ 'Content-Type' => 'text/plain' ], [ "Combust says ok\n" ] ];
+    };
 
+    my $match = $request->site->router->match($request->env);
     {
         my $module = $match->{controller};
         $module =~ s{::}{/}g;
@@ -179,9 +183,10 @@ sub reference {
         }
         enable "Plack::Middleware::XForwardedFor",
           (@trusted_ips ? (trust => \@trusted_ips) : ());
-        enable "AccessLog",
-          logger => sub { print $logfh @_ },
-          format => "%h %V %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-agent}i\"";
+        enable_if { $_[0]->{PATH_INFO} ne "/combust-healthz" }
+            "AccessLog",
+              logger => sub { print $logfh @_ },
+              format => qq{%h %V %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i "};
         enable "Options";
         inner();
         $app;
