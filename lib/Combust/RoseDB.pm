@@ -34,7 +34,11 @@ BEGIN {
     $db_cfg = $dbs{$db_cfg->{alias}} if $db_cfg->{alias};
 
     my $dsn = $db_cfg->{data_source}
-      or do { require Data::Dumper; die Data::Dumper::Dumper($db_cfg) };
+      or do {
+        require Data::Dumper;
+        warn "missing 'data_source' in db_cfg, did combust.conf load?\n";
+        die Data::Dumper::Dumper($db_cfg);
+      };
   
     my ($scheme, $driver, $attr_string, $attr_hash, $driver_dsn) = DBI->parse_dsn($dsn)
         or die "Can't parse DBI DSN '$dsn'";
