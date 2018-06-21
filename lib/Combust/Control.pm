@@ -299,8 +299,6 @@ sub send_output {
     $self->request->header_out($k, $v);
   }
 
-  $self->request->header_out('P3P', q[CP="There's no P3P policy. Learn why here: http://www.w3.org/P3P/"]);
-
   if ($self->no_cache) {
       my $req = $self->request;
 
