@@ -64,6 +64,10 @@ BEGIN {
     $opt{connect_options}{mysql_enable_utf8} = 1;
     push @{$opt{post_connect_sql}}, 'SET NAMES utf8';
 
+    if ($db_cfg->{post_connect_sql}) {
+        push @{$opt{post_connect_sql}}, $db_cfg->{post_connect_sql};
+    }
+
     __PACKAGE__->register_db(%opt);
     
     if ($db_cfg->{default}) {
