@@ -11,7 +11,6 @@ sub render {
     my ($uri, $method) = ($self->request->uri =~ m!^(/api/((\w+)/?([a-z]\w+))?)!);
     return 404 unless $method;
 
-    # MSIE caches POST requests sometimes (?)
     $self->no_cache(1) if $self->request->method eq 'post';
     
     if ($self->can('check_auth')) {
