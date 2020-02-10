@@ -7,7 +7,7 @@ create table if not exists combust_cache (
   `data` mediumblob NOT NULL,
   `metadata` mediumblob,
   `serialized` tinyint(1) NOT NULL default '0',
-  `expire` datetime NOT NULL default '0000-00-00 00:00:00',
+  `expire` datetime NOT NULL default '1970-01-01 00:00:00',
   PRIMARY KEY  (`id`,`type`),
   KEY `expire_idx` (`expire`),
   KEY `purge_idx` (`purge_key`)
