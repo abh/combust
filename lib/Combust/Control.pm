@@ -109,27 +109,24 @@ sub run {
 sub _process_status {
     my ($self, $status, $output, $content_type) = @_;
 
-    unless ($status and $$output) {
+    $self->request->response->status or
+      $self->request->response->status($status || 500);
 
-        $self->request->response->status or
-          $self->request->response->status($status || 500);
+    unless ($$output) {
 
-        unless ($$output) {
+      my $error_header = "";
+      $error_header = 'File not found' if $status == 404;
+      $error_header = 'Server Error'   if $status == 500;
 
-            my $error_header = "";
-            $error_header = 'File not found' if $status == 404;
-            $error_header = 'Server Error'   if $status == 500;
+      my $error_text = $self->request->notes('error') || '';
 
-            my $error_text = $self->request->notes('error') || '';
+      $self->tpl_param('error'        => $status);
+      $self->tpl_param('error_header' => $error_header);
+      $self->tpl_param('error_text'   => $error_text);
+      $self->tpl_param('error_uri'    => $self->request->uri);
 
-            $self->tpl_param('error'        => $status);
-            $self->tpl_param('error_header' => $error_header);
-            $self->tpl_param('error_text'   => $error_text);
-            $self->tpl_param('error_uri'    => $self->request->uri);
-
-            $$output = $self->evaluate_template("error/error.html")
-              || "Error $status";
-        }
+      $$output = $self->evaluate_template("error/error.html")
+        || "Error $status";
     }
 }
 
