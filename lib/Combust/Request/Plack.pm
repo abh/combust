@@ -28,16 +28,14 @@ has 'site' => (
 );
 
 has 'notes_container' => (
-    traits => ['Hash'],
-    is  => 'ro',
-    isa => 'HashRef[Any]',
-    default => sub { 
+    traits  => ['Hash'],
+    is      => 'ro',
+    isa     => 'HashRef[Any]',
+    default => sub {
         my $self = shift;
         return do { $self->env->{'combust.notes'} ||= {} }
     },
-    handles => {
-       notes => 'accessor',
-    },
+    handles => {notes => 'accessor',},
 );
 
 sub remote_ip {
@@ -52,7 +50,7 @@ sub req_param {
 
 sub args {
     my $self = shift;
-    return wantarray ? %{ $self->query_parameters } : $self->env->{QUERY_STRING}
+    return wantarray ? %{$self->query_parameters} : $self->env->{QUERY_STRING};
 }
 
 # Plack::Request returns a regular URI object; in the past
@@ -61,11 +59,12 @@ sub args {
 sub uri {
     my $self = shift;
     if (@_) {
+
         # compatibility with old combust
         $self->path(@_);
     }
     my $uri = $self->SUPER::uri;
-    $uri = Combust::Request::URI->new( $uri->as_string, $self->path );
+    $uri = Combust::Request::URI->new($uri->as_string, $self->path);
     return $uri;
 }
 
@@ -99,8 +98,8 @@ sub method {
 
 sub update_mtime {
     my $self = shift;
-    my $old = $self->{_mtime} || 0;
-    my $new = shift || time;
+    my $old  = $self->{_mtime} || 0;
+    my $new  = shift           || time;
     $self->{_mtime} = $new if $new > $old;
     $self->{_mtime};
 }
@@ -110,7 +109,8 @@ sub modified_time {
     return $self->{_mtime};
 }
 
-sub send_http_header { 
+sub send_http_header {
+
     # noop
 }
 
@@ -120,8 +120,8 @@ sub dir_config {
 }
 
 sub get_cookie {
-  my ($self, $name) = @_;
-  $self->cookies->{$name};
+    my ($self, $name) = @_;
+    $self->cookies->{$name};
 }
 
 sub set_cookie {
@@ -139,6 +139,6 @@ sub set_cookie {
 
 }
 
-sub is_main { 1 }
+sub is_main {1}
 
 1;

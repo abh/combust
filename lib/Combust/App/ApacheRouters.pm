@@ -4,10 +4,10 @@ use Config::General ();
 use Combust::Config ();
 with 'Combust::ApacheConfig::Role';
 
-sub BUILD {}
+sub BUILD { }
 
 before 'BUILD' => sub {
-    my $self   = shift;
+    my $self = shift;
 
     my $apache = $self->apache_config;
 
@@ -19,15 +19,16 @@ before 'BUILD' => sub {
         }
 
         for my $virt (@virt) {
-            
+
             # warn Dumper(\$virt);
 
             my @vars;
             if ($virt->{PerlSetVar}) {
                 @vars = (
-                ref $virt->{PerlSetVar}
-                  ? @{$virt->{PerlSetVar}}
-                  : $virt->{PerlSetVar});
+                    ref $virt->{PerlSetVar}
+                    ? @{$virt->{PerlSetVar}}
+                    : $virt->{PerlSetVar}
+                );
             }
 
             my $domain = $virt->{ServerName};
@@ -53,7 +54,6 @@ before 'BUILD' => sub {
 
 };
 
-
 sub _connect_locations {
     my ($self, $router, $locations) = @_;
 
@@ -68,7 +68,8 @@ sub _connect_locations {
         next if $loc_data->{SetHandler} eq 'cgi-script';
 
         if ($loc_data->{SetHandler} =~ m/^default(-handler)?$/) {
-            $loc_data->{SetHandler}  = 'perl-script';
+            $loc_data->{SetHandler} = 'perl-script';
+
             # TODO: make a separate handler that always just serves the files as-is
             $loc_data->{PerlHandler} = 'Combust::Control::Basic';
         }
@@ -80,8 +81,8 @@ sub _connect_locations {
             die "no PerlHandler for $location" unless $handler;
             $handler =~ s/->super//;
 
-            $location .=
-              $location =~ m{/$}
+            $location
+              .= $location =~ m{/$}
               ? ".*"
               : "(?:/.*)?";
 
@@ -104,6 +105,5 @@ sub _connect_locations {
         die "Unsupported handler $loc_data->{SetHandler}";
     }
 }
-
 
 1;

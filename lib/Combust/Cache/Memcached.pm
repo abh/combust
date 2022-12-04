@@ -22,45 +22,50 @@ my $memd = Cache::Memcached->new(
 # warn Data::Dumper->Dump([\$memd], [qw(memd)]);
 
 sub store {
-  my ($self, %args) = @_;
-  my $id        = ($self->_normalize_id($args{id}) || $self->{fetched_id}) 
-    or carp "No id specified" and return;
+    my ($self, %args) = @_;
+    my $id = ($self->_normalize_id($args{id}) || $self->{fetched_id})
+      or carp "No id specified" and return;
 
-  my $data      = defined $args{data}
-                    ? $args{data}
-                    : (carp "No data passed to cache" and return);
+    my $data =
+      defined $args{data}
+      ? $args{data}
+      : (carp "No data passed to cache" and return);
 
-  my $expire    = time + ($args{expire} || $args{expires} || 7200);
-      
-  if ($args{plain}) {
-      return $memd->set($id, $data, $expire);
-  }
+    my $expire = time + ($args{expire} || $args{expires} || 7200);
 
-  my $metadata  = ($args{meta_data} and ref $args{meta_data} eq "HASH"
-                   ? $args{meta_data}
-                   : undef);
-  
-  return $memd->set($id, { data => $data,
-                           meta_data => $metadata,
-                           created_timestamp => time,
-                         }, 
-                    $expire
-                   );
+    if ($args{plain}) {
+        return $memd->set($id, $data, $expire);
+    }
+
+    my $metadata = (
+          $args{meta_data} and ref $args{meta_data} eq "HASH"
+        ? $args{meta_data}
+        : undef
+    );
+
+    return $memd->set(
+        $id,
+        {   data              => $data,
+            meta_data         => $metadata,
+            created_timestamp => time,
+        },
+        $expire
+    );
 }
 
 sub fetch {
-  my ($self, %args) = @_;
+    my ($self, %args) = @_;
 
-  my $id = $args{id} or carp "No id specified" and return;
+    my $id = $args{id} or carp "No id specified" and return;
 
-  $id = $self->_normalize_id($id);
+    $id = $self->_normalize_id($id);
 
-  $self->{fetched_id} = $id;
+    $self->{fetched_id} = $id;
 
-  local $^W = 0;
-  my $row = $memd->get($id) or return undef;
-  
-  return $row;
+    local $^W = 0;
+    my $row = $memd->get($id) or return undef;
+
+    return $row;
 
 }
 
@@ -86,12 +91,10 @@ sub fetch_multi {
     $rv;
 }
 
-
-
-sub incr { 
+sub incr {
     my ($self, $id, $incr) = @_;
     $incr = 1 unless $incr;
-    $id = $self->_normalize_id($id);
+    $id   = $self->_normalize_id($id);
 
     my $rv = $memd->incr($id, $incr);
     return $rv if $rv;
@@ -104,22 +107,24 @@ sub incr {
     return $memd->incr($id, $incr);
 }
 
-
 sub delete {
-  my ($self, %args) = @_;
-  my $id        = ($self->_normalize_id($args{id}) || $self->{fetched_id}) 
-    or carp "No id specified" and return;
+    my ($self, %args) = @_;
+    my $id = ($self->_normalize_id($args{id}) || $self->{fetched_id})
+      or carp "No id specified" and return;
 
-  $memd->delete($id);
+    $memd->delete($id);
 }
 
 sub _normalize_id {
     my ($self, $id) = @_;
+
     # allow falling back to using $self->{fetched_id} in the calling methods
-    return unless $id; 
+    return unless $id;
+
     # replace ' ' by '+', because memcached keys can't have spaces
     $id =~ tr/ /+/;
     utf8::encode($id) if utf8::is_utf8($id);
+
     # prepend "$type;"
     $id = join ';', $self->{type}, $id;
     $self->SUPER::_normalize_id($id);

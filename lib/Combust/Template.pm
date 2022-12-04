@@ -22,7 +22,7 @@ my $root   = $config->root;
 $Template::Config::STASH = 'Template::Stash::XS';
 
 $Template::Stash::SCALAR_OPS->{rand} = sub {
-    return int( rand(shift) );
+    return int(rand(shift));
 };
 
 sub new {
@@ -32,8 +32,8 @@ sub new {
 }
 
 sub _init {
-    my $self = shift; 
-    my %args = ref $_[0] ? %{ $_[0] } : @_;
+    my $self = shift;
+    my %args = ref $_[0] ? %{$_[0]} : @_;
 
     my $parser = Template::Parser->new();
 
@@ -57,16 +57,16 @@ sub _init {
 
     Scalar::Util::weaken(my $weak_self = $self);
     my $provider =
-      Combust::Template::Provider->new( %provider_config,
-        INCLUDE_PATH => [ sub { $weak_self->get_include_path } ], );
+      Combust::Template::Provider->new(%provider_config,
+          INCLUDE_PATH => [sub { $weak_self->get_include_path }],);
 
     my %tt_config = (
-        FILTERS =>
-          { 'navigation' => [ \&Combust::Template::Filters::navigation_filter_factory, 1 ],
+        FILTERS => {
+            'navigation' => [\&Combust::Template::Filters::navigation_filter_factory, 1],
             $args{filters} ? %{$args{filters}} : ()
-          },
+        },
 
-        PLUGINS        => ($args{plugins} || {}),
+        PLUGINS => ($args{plugins} || {}),
 
         RELATIVE       => 1,
         LOAD_TEMPLATES => [$provider],
@@ -77,22 +77,23 @@ sub _init {
         #               http => 1,
         #		    default => 1,
         #	            },
-        'PRE_PROCESS' => [ 'tpl/combust_defaults', 'tpl/defaults' ],
+        'PRE_PROCESS' => ['tpl/combust_defaults', 'tpl/defaults'],
         'PROCESS'     => 'tpl/wrapper',
         'PLUGIN_BASE' => 'Combust::Template::Plugin',
+
         # 'DEBUG'  => DEBUG_VARS | DEBUG_DIRS | DEBUG_STASH
         #             | DEBUG_PARSER | DEBUG_PROVIDER | DEBUG_SERVICE
         #             | DEBUG_CONTEXT,
     );
 
-    if ( $config->template_timer ) {
+    if ($config->template_timer) {
         require Template::Timer;
         $tt_config{CONTEXT} = Template::Timer->new(%tt_config);
     }
 
     $self->{provider} = $provider;
 
-    $self->{tt} = Template->new( \%tt_config )
+    $self->{tt} = Template->new(\%tt_config)
       or croak "Could not initialize Template object: $Template::ERROR";
 
     return $self;
@@ -114,8 +115,8 @@ sub set_include_path {
 sub get_include_path {
     my $self = shift;
 
-    if ( my $inc_path = $self->{inc_path} ) {
-        return $inc_path if ref $inc_path eq 'ARRAY';
+    if (my $inc_path = $self->{inc_path}) {
+        return $inc_path     if ref $inc_path eq 'ARRAY';
         return $inc_path->() if ref $inc_path eq 'CODE';
         croak "Don't know how to process include_path $inc_path";
     }
@@ -132,32 +133,32 @@ sub default_include_path {
     my $site      = $self->{_site};
     my $root_docs = $config->root_docs;
     my $site_dir =
-      ( $site and $config->site->{$site}->{docs_site} )
+      ($site and $config->site->{$site}->{docs_site})
       ? $config->site->{$site}->{docs_site}
       : $site;
 
     my $path = [
-                ($site_dir 
-                 ? ("$root_docs/$site_dir/") 
-                 : ()
-                ),
-                "$root_docs/shared/",
-                "$root_docs/",  
-                "$root/apache/root_templates/",
+        (   $site_dir
+            ? ("$root_docs/$site_dir/")
+            : ()
+        ),
+        "$root_docs/shared/",
+        "$root_docs/",
+        "$root/apache/root_templates/",
     ];
 
     $path;
 }
 
 sub process {
-    my ( $self, $template, $tpl_params, $args ) = @_;
+    my ($self, $template, $tpl_params, $args) = @_;
 
     local $self->{_site} = $args->{site};
 
     $tpl_params->{config} = $config unless $tpl_params->{config};
 
     my $output;
-    unless ( $self->{tt}->process( $template, $tpl_params, \$output, { binmode => ":utf8" } ) ) {
+    unless ($self->{tt}->process($template, $tpl_params, \$output, {binmode => ":utf8"})) {
         die $self->{tt}->error . "\n";
     }
 
@@ -166,6 +167,5 @@ sub process {
 
     return $output;
 }
-
 
 1;

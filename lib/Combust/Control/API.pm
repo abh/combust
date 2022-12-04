@@ -12,7 +12,7 @@ sub render {
     return 404 unless $method;
 
     $self->no_cache(1) if $self->request->method eq 'post';
-    
+
     if ($self->can('check_auth')) {
         unless (my $auth_setup = $self->check_auth($method)) {
             return $self->system_error(412, "$auth_setup" || 'Authentication failure');
@@ -23,14 +23,14 @@ sub render {
     if (my $err = $@) {
         return $self->system_error(500, $err);
     }
-    
+
     my ($result, $meta) = eval {
         $self->api($method, $self->api_params, {json => 1, site => $self->site, %$api_options});
     };
     if (my $err = $@) {
         return $self->system_error(500, $err);
     }
-    
+
     return $self->system_error(500, "$uri didn't return a result") unless (defined $result);
 
     return OK, $result, 'text/javascript';
@@ -45,9 +45,9 @@ sub api_options {
 }
 
 sub _format_error {
-    my $self = shift;
-    my $status = shift; 
-    my $time = scalar localtime();
+    my $self   = shift;
+    my $status = shift;
+    my $time   = scalar localtime();
 
     my $time = DateTime->now->iso8601;
     chomp(my $err = join(" ", $time, @_));
@@ -56,14 +56,14 @@ sub _format_error {
 
     encode_json(
         {   ($status >= 500 ? "system_error" : "error") => $err,
-            server   => hostname,
-            datetime => $time,
+            server                                      => hostname,
+            datetime                                    => $time,
         }
     );
 }
 
 sub system_error {
-    my $self = shift;
+    my $self   = shift;
     my $status = shift || 500;
     $self->request->response->status($status);
     return 200, $self->_format_error($status, @_), 'text/javascript';
@@ -71,7 +71,7 @@ sub system_error {
 
 # todo: should these be in Combust::Control ?
 sub no_cache {
-    my $self = shift;
+    my $self   = shift;
     my $status = shift;
     $status = 1 unless defined $status;
     $self->{no_cache} = $status;
@@ -83,16 +83,14 @@ sub post_process {
     if ($self->{no_cache}) {
         my $r = $self->request;
 
-        $r->header_out('Expires', HTTP::Date::time2str( time() ));
-        $r->header_out('Cache-Control', 'private, no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
+        $r->header_out('Expires', HTTP::Date::time2str(time()));
+        $r->header_out('Cache-Control',
+            'private, no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
         $r->header_out('Pragma', 'no-cache');
     }
-    
+
     return OK;
 }
 
-
-
 1;
-
 

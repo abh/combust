@@ -20,46 +20,48 @@ our $namespace;
 my $default_backend = 'dbi';
 
 sub new {
-  my ($proto, %args) = (shift, @_);
-  my $class   = ref $proto || $proto;
-  my $type    = $args{type}|| '';
-  my $backend = $args{backend};
-  my $self = { type => $type };
-  # bless( $self, $class);
-  bless_backend($self, $class, $backend);
+    my ($proto, %args) = (shift, @_);
+    my $class   = ref $proto  || $proto;
+    my $type    = $args{type} || '';
+    my $backend = $args{backend};
+    my $self    = {type => $type};
+
+    # bless( $self, $class);
+    bless_backend($self, $class, $backend);
 }
 
 sub bless_backend {
-  my ($self, $class, $backend) = @_;
-  $backend ||= $class->backend;
-  my $_class;
-  $_class = 'Combust::Cache::DBI' if $backend eq "dbi";
-  $_class = 'Combust::Cache::Memcached' if $backend eq "memcached" and $HAS_MEMCACHED;
-  croak "Cache backend $backend not available" unless $_class;
-  bless $self, $_class if $_class;
+    my ($self, $class, $backend) = @_;
+    $backend ||= $class->backend;
+    my $_class;
+    $_class = 'Combust::Cache::DBI'       if $backend eq "dbi";
+    $_class = 'Combust::Cache::Memcached' if $backend eq "memcached" and $HAS_MEMCACHED;
+    croak "Cache backend $backend not available" unless $_class;
+    bless $self, $_class if $_class;
 }
 
 sub backend {
-  my ($self, $backend) = @_;
+    my ($self, $backend) = @_;
 
-  carp "$backend is not a valid Combust::Cache storage backend"
-      and $backend = undef 
-	if $backend and $backend !~ m/^(dbi|memcached)$/;
+    carp "$backend is not a valid Combust::Cache storage backend"
+      and $backend = undef
+      if $backend
+      and $backend !~ m/^(dbi|memcached)$/;
 
-  if ($backend) {
-    if (ref $self) {
-      bless_backend($self, $self, $backend);
+    if ($backend) {
+        if (ref $self) {
+            bless_backend($self, $self, $backend);
+        }
+        else {
+            $default_backend = $backend;
+        }
     }
-    else {
-      $default_backend = $backend;
-    }
-  }
 
-  if (my $class = ref $self) {
-      $class =~ s/.*:://;
-      return lc $class;
-  }
-  return $default_backend;
+    if (my $class = ref $self) {
+        $class =~ s/.*:://;
+        return lc $class;
+    }
+    return $default_backend;
 }
 
 sub _normalize_id {
@@ -71,7 +73,6 @@ sub _normalize_id {
     }
     $id;
 }
-
 
 1;
 __END__

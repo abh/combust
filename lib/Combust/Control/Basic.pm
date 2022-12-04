@@ -13,55 +13,56 @@ __PACKAGE__->mk_accessors(qw(force_template_processing));
 
 my $config = Combust::Config->new();
 
-LWP::MediaTypes::read_media_types( $config->root . "/apache/conf/mime.types");
+LWP::MediaTypes::read_media_types($config->root . "/apache/conf/mime.types");
 
 sub render {
-  my $self = shift;
+    my $self = shift;
 
-  my $template = '';
+    my $template = '';
 
-  my $uri = $self->request->path;
+    my $uri = $self->request->path;
 
-  # Don't serve special files:
-  #    Normally, we want to use DirectoryMatch for this, but URI->File
-  #    mapping is handled in this controller and parents.
-  return 404
-    if $uri =~ m!/(?:\.svn|tpl)/!;
-  # we don't need /\.ht.* here, because they aren't special in
-  # combust.
+    # Don't serve special files:
+    #    Normally, we want to use DirectoryMatch for this, but URI->File
+    #    mapping is handled in this controller and parents.
+    return 404
+      if $uri =~ m!/(?:\.svn|tpl)/!;
 
-  # Some special handlers
-  return $self->deadlink_handler()
-    if $uri =~ m{^/!dl/.*};
+    # we don't need /\.ht.* here, because they aren't special in
+    # combust.
 
-  # Equivalent of Apache's DirectoryIndex directive
-  $uri =~ s!/$!/index.html!;
+    # Some special handlers
+    return $self->deadlink_handler()
+      if $uri =~ m{^/!dl/.*};
 
-  if (!$self->force_template_processing and $uri !~ m!/(.*\.(?:html?))$!) {
-      return $self->serve_static_file;
-  }
+    # Equivalent of Apache's DirectoryIndex directive
+    $uri =~ s!/$!/index.html!;
 
-  my $content_type;
+    if (!$self->force_template_processing and $uri !~ m!/(.*\.(?:html?))$!) {
+        return $self->serve_static_file;
+    }
 
-  if ($uri =~ m!^/((?:[^/]+/)*[^/]+)$!) {
-    $template = $1; 
-    $template =~ s/\.\.+//g;
-    $content_type = guess_media_type($template) || 'text/html';
-  }
-  else {
-    return 404;
-  }    
+    my $content_type;
 
-  my $output = eval { $self->evaluate_template($template); };
-  if (my $err = $@ or !defined $output) {
-    warn "TT ERROR: ",  $self->tt->error;
-    warn "ERROR: $err";
-    $self->request->notes('error', $err);
-    return 404 if $err =~ m/: not found/;
-    return 500;
-  }
+    if ($uri =~ m!^/((?:[^/]+/)*[^/]+)$!) {
+        $template = $1;
+        $template =~ s/\.\.+//g;
+        $content_type = guess_media_type($template) || 'text/html';
+    }
+    else {
+        return 404;
+    }
 
-  return OK, $output, $content_type;
+    my $output = eval { $self->evaluate_template($template); };
+    if (my $err = $@ or !defined $output) {
+        warn "TT ERROR: ", $self->tt->error;
+        warn "ERROR: $err";
+        $self->request->notes('error', $err);
+        return 404 if $err =~ m/: not found/;
+        return 500;
+    }
+
+    return OK, $output, $content_type;
 }
 
 sub serve_static_file {
@@ -74,7 +75,7 @@ sub serve_static_file {
     # if the filename does not end in .html, then do not process it
     # with TT and just send it.
     my $file = $uri;
-    substr($file,0,1) = ""; # trim leading slash
+    substr($file, 0, 1) = "";    # trim leading slash
 
     $file = _canonicalize_path($file);
     return 400 if $file =~ m{^\.\.};
@@ -82,6 +83,7 @@ sub serve_static_file {
     my $content_type;
 
     my $data = $self->tt->provider->expand_filename($file);
+
     #warn Data::Dumper->Dump([\$data],[qw(data)]);
     if ($data->{path}) {
         $content_type = guess_media_type($data->{path});
@@ -91,7 +93,7 @@ sub serve_static_file {
         my $mtime = (stat($fh))[9];
         $self->request->update_mtime($mtime);
 
-        return OK, $fh, $content_type
+        return OK, $fh, $content_type;
     }
     else {
         if ($self->tt->provider->is_directory($file)) {
@@ -105,11 +107,11 @@ sub serve_static_file {
 
 sub fixup_static_version {
     my $self = shift;
-    my $uri = $self->request->path;
- 
+    my $uri  = $self->request->path;
+
     if ($uri =~ s!^(/.*)\.v[0-9a-f.]+\.(js|css|gif|png|jpg|svg|htc|ico)$!$1.$2!) {
-        my $max_age = 315360000; # ten years
-        $self->request->header_out('Expires', HTTP::Date::time2str( time() + $max_age ));
+        my $max_age = 315360000;    # ten years
+        $self->request->header_out('Expires',       HTTP::Date::time2str(time() + $max_age));
         $self->request->header_out('Cache-Control', "max-age=${max_age},public");
         $self->request->path($uri);
     }
@@ -121,6 +123,7 @@ sub _canonicalize_path {
 
     # from Mojo::Path
     for my $part (split '/', $path, -1) {
+
         # ".."
         if ($part eq '..') {
             unless (@parts && $parts[-1] ne '..') { push @parts, '..' }
@@ -140,32 +143,34 @@ sub _canonicalize_path {
 }
 
 sub deadlink_handler {
-  my $self = shift;
-  my $r = $self->request;
+    my $self = shift;
+    my $r    = $self->request;
 
-  # it's possible this should be an entirely seperate handler, but
-  # that seems like overkill.
-  $r->path =~ m{^/!dl/(.*)$};
-  my $url = $1;
+    # it's possible this should be an entirely seperate handler, but
+    # that seems like overkill.
+    $r->path =~ m{^/!dl/(.*)$};
+    my $url = $1;
 
-  # some simple validation
-  return 500
-    unless $url =~ m{^https?://?};
+    # some simple validation
+    return 500
+      unless $url =~ m{^https?://?};
 
-  my $template = "error/deadlink.html";
+    my $template = "error/deadlink.html";
 
-  $self->tpl_param(url => $url);
+    $self->tpl_param(url => $url);
 
-  if ($r->header_in("User-Agent") =~ /nodeworks/i) {
-    # link checkers get 200s
-    $r->status(203);
-  } else {
-    # everyone else gets a 404
-    $r->status(404);
-  }
+    if ($r->header_in("User-Agent") =~ /nodeworks/i) {
 
-  my $output = $self->evaluate_template($template);
-  return OK, $output, "text/html";
+        # link checkers get 200s
+        $r->status(203);
+    }
+    else {
+        # everyone else gets a 404
+        $r->status(404);
+    }
+
+    my $output = $self->evaluate_template($template);
+    return OK, $output, "text/html";
 }
 
 1;

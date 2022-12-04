@@ -3,55 +3,55 @@ use strict;
 use base qw(Template::Provider);
 
 sub is_directory {
-  my ($self, $name) = @_;
+    my ($self, $name) = @_;
 
-  # this is ignoring relative and absolute paths; but we don't use
-  # those anyway...
+    # this is ignoring relative and absolute paths; but we don't use
+    # those anyway...
 
-  my $path;
+    my $path;
 
- INCPATH: {
-    my $paths = $self->paths()
-      || return ($self->error(), Template::Constants::STATUS_ERROR);
-    
-    foreach my $dir (@$paths) {
-      $path = "$dir/$name";
+  INCPATH: {
+        my $paths = $self->paths()
+          || return ($self->error(), Template::Constants::STATUS_ERROR);
 
-      return 1 if -d $path;
+        foreach my $dir (@$paths) {
+            $path = "$dir/$name";
+
+            return 1 if -d $path;
+        }
+
     }
 
-  }
-
-  return 0;
+    return 0;
 }
 
 sub expand_filename {
-  my ($self, $name) = @_;
+    my ($self, $name) = @_;
 
-  my $path;
+    my $path;
 
- INCPATH: {
-    # otherwise, it's a file name relative to INCLUDE_PATH
-    my $paths = $self->paths()
-      || return ($self->error(), Template::Constants::STATUS_ERROR);
-    
-    foreach my $dir (@$paths) {
-      $path = "$dir/$name";
-      last INCPATH if -f $path;
+  INCPATH: {
+        # otherwise, it's a file name relative to INCLUDE_PATH
+        my $paths = $self->paths()
+          || return ($self->error(), Template::Constants::STATUS_ERROR);
+
+        foreach my $dir (@$paths) {
+            $path = "$dir/$name";
+            last INCPATH if -f $path;
+        }
+        undef $path;    # not found
     }
-    undef $path;      # not found
-  }
 
-  return +{
-	   path => ($path || undef),
-	   time => ($path ? ((stat $path)[9] || 0) : 0),
-	  };
+    return +{
+        path => ($path || undef),
+        time => ($path ? ((stat $path)[9] || 0) : 0),
+    };
 }
 
 sub _init {
-    my $class = shift;
+    my $class  = shift;
     my $params = $_[0];
-    my $self = $class->SUPER::_init(@_);
+    my $self   = $class->SUPER::_init(@_);
     $self->{EXTENSIONS} = $params->{EXTENSIONS} || [];
     $self;
 }
@@ -62,26 +62,27 @@ sub fetch {
     my ($data, $error) = $self->SUPER::fetch(@_);
 
     if ($error and $error != Template::Constants::STATUS_ERROR) {
+
         # no extension to rip off ...
         return ($data, $error) unless $name =~ s/\.[^.]+$//;
-        
+
         for my $ext (@{$self->{EXTENSIONS}}) {
             my $newname = "$name." . $ext->{extension};
-            ($data, $error) = $self->{ INCLUDE_PATH } 
-            ? $self->load($newname) 
-                : (undef, Template::Constants::STATUS_DECLINED);
-            
+            ($data, $error) =
+                $self->{INCLUDE_PATH}
+              ? $self->load($newname)
+              : (undef, Template::Constants::STATUS_DECLINED);
+
             if (defined $data) {
-                $data = {text => $data };
+                $data = {text => $data};
                 ($data, $error) = $ext->{translator}->translate($data);
                 last;
             }
         }
     }
 
-    return ($data, $error); 
+    return ($data, $error);
 }
-
 
 1;
 

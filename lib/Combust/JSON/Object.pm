@@ -13,7 +13,7 @@ sub import {
 }
 
 sub inject_into {
-    my ( $self, $class ) = @_;
+    my ($self, $class) = @_;
     return if $class->isa($self);
 
     # Inherit from this package
@@ -46,11 +46,11 @@ sub TO_JSON {
     my $key    = $self->JSON_key;
     my $frozen = $self->JSON_freeze;
     $frozen->{__class__} ||= ref $self;
-    return +{ $key => $frozen };
+    return +{$key => $frozen};
 }
 
 sub JSON_freeze {
-    my %h = %{ +shift };
+    my %h = %{+shift};
     return \%h;
 }
 

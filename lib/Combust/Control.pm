@@ -6,7 +6,7 @@ use Combust::Constant qw(OK SERVER_ERROR MOVED DONE DECLINED REDIRECT);
 use Carp qw(confess cluck carp);
 use Digest::SHA qw(sha1_hex);
 use HTML::Entities ();
-use HTTP::Date ();
+use HTTP::Date     ();
 use Encode qw(encode_utf8);
 use Scalar::Util qw(looks_like_number reftype);
 use IO::Compress::Gzip qw(gzip $GzipError);
@@ -24,32 +24,35 @@ use namespace::clean -except => 'meta';
 
 my $config = Combust::Config->new();
 
-sub config { $config }
+sub config {$config}
 
 sub site { shift->request->site }
 
 sub req_param {
-  my $self = shift;
-  $self->request->req_param(@_);
+    my $self = shift;
+    $self->request->req_param(@_);
 }
 
-sub param  { cluck "param() deprecated; use tpl_param()"; tpl_param(@_) }
+sub param  { cluck "param() deprecated; use tpl_param()";   tpl_param(@_) }
 sub params { cluck "params() deprecated; use tpl_params()"; tpl_params(@_) }
 
 sub tpl_param {
-  my ($self, $key) = (shift, shift);
-  return unless $key;
-  #Carp::cluck "param('$key' ...) called" if $key eq "user";
-  $self->{params}->{$key} = shift if @_;
-  return $self->{params}->{$key};
+    my ($self, $key) = (shift, shift);
+    return unless $key;
+
+    #Carp::cluck "param('$key' ...) called" if $key eq "user";
+    $self->{params}->{$key} = shift if @_;
+    return $self->{params}->{$key};
 }
 
 sub tpl_params {
-  my $self = shift;
-  cluck("tpl_params called with [$self] as self.  Did you configure the handler to call ->handler instead of ->super?")
-    unless ref $self;
-  cluck('Combust::Control->tpl_params called with parameters, did you mean to call "param"?') if @_;
-  $self->{params} || {};
+    my $self = shift;
+    cluck(
+        "tpl_params called with [$self] as self.  Did you configure the handler to call ->handler instead of ->super?"
+    ) unless ref $self;
+    cluck('Combust::Control->tpl_params called with parameters, did you mean to call "param"?')
+      if @_;
+    $self->{params} || {};
 }
 
 sub init {
@@ -109,86 +112,89 @@ sub run {
 sub _process_status {
     my ($self, $status, $output, $content_type) = @_;
 
-    $self->request->response->status or
-      $self->request->response->status($status || 500);
+    $self->request->response->status
+      or $self->request->response->status($status || 500);
 
     unless ($$output) {
 
-      my $error_header = "";
-      $error_header = 'File not found' if $status == 404;
-      $error_header = 'Server Error'   if $status == 500;
+        my $error_header = "";
+        $error_header = 'File not found' if $status == 404;
+        $error_header = 'Server Error'   if $status == 500;
 
-      my $error_text = $self->request->notes('error') || '';
+        my $error_text = $self->request->notes('error') || '';
 
-      $self->tpl_param('error'        => $status);
-      $self->tpl_param('error_header' => $error_header);
-      $self->tpl_param('error_text'   => $error_text);
-      $self->tpl_param('error_uri'    => $self->request->uri);
+        $self->tpl_param('error'        => $status);
+        $self->tpl_param('error_header' => $error_header);
+        $self->tpl_param('error_text'   => $error_text);
+        $self->tpl_param('error_uri'    => $self->request->uri);
 
-      $$output = $self->evaluate_template("error/error.html")
-        || "Error $status";
+        $$output = $self->evaluate_template("error/error.html")
+          || "Error $status";
     }
 }
 
-
-
 sub do_request {
-  my $self   = shift;
-  my $method = shift || 'render';
+    my $self   = shift;
+    my $method = shift || 'render';
 
-  my $cache_info = $self->cache_info || {};
+    my $cache_info = $self->cache_info || {};
 
-  my ($status, $output, $cache);
+    my ($status, $output, $cache);
 
-  if ($cache_info->{id} 
-      && ($cache = Combust::Cache->new( type => ($cache_info->{type} || ''), ($cache_info->{backend} ? (backend => $cache_info->{backend}) : () )))
-     ) {
-    my $cache_data;
-    $cache_data = $cache->fetch(id => $cache_info->{id})
-      unless $self->req_param('cache_bypass');
+    if ($cache_info->{id}
+        && ($cache = Combust::Cache->new(
+                type => ($cache_info->{type} || ''),
+                ($cache_info->{backend} ? (backend => $cache_info->{backend}) : ())
+            )
+        )
+      )
+    {
+        my $cache_data;
+        $cache_data = $cache->fetch(id => $cache_info->{id})
+          unless $self->req_param('cache_bypass');
 
-    if ($cache_data and $cache_data->{data}) {
-      $self->post_process($cache_data->{data});
-      $self->request->update_mtime($cache_data->{created_timestamp});
-      my ($content_type);
-      $content_type = $cache->{meta_data}->{content_type}
-	if $cache->{meta_data}->{content_type};
-      $status = $cache->{meta_data}->{status}
-	if $cache->{meta_data}->{status};
+        if ($cache_data and $cache_data->{data}) {
+            $self->post_process($cache_data->{data});
+            $self->request->update_mtime($cache_data->{created_timestamp});
+            my ($content_type);
+            $content_type = $cache->{meta_data}->{content_type}
+              if $cache->{meta_data}->{content_type};
+            $status = $cache->{meta_data}->{status}
+              if $cache->{meta_data}->{status};
 
-      $status ||= OK;
+            $status ||= OK;
 
-      return ($status, $cache_data->{data}, $content_type);
+            return ($status, $cache_data->{data}, $content_type);
+        }
     }
-  }
 
-  ($status, $output, my $content_type) = eval { $self->$method };
-  if (my $err = $@) {
-      if ($err =~ m{^(-?\d+)($|\sat\s\/)}) {
-          $status = $1;
-      }
-      else {
-          warn "render failed: $err";
-          $status = SERVER_ERROR;
-      }
-  }
-  if ($status == DONE) {
-    return $self->{_response_ref}
-      ? delete $self->{_response_ref}
-      : [ $self->request->response->status ]
-  }
-  return ($status, $output, $content_type) unless $status == OK;
+    ($status, $output, my $content_type) = eval { $self->$method };
+    if (my $err = $@) {
+        if ($err =~ m{^(-?\d+)($|\sat\s\/)}) {
+            $status = $1;
+        }
+        else {
+            warn "render failed: $err";
+            $status = SERVER_ERROR;
+        }
+    }
+    if ($status == DONE) {
+        return $self->{_response_ref}
+          ? delete $self->{_response_ref}
+          : [$self->request->response->status];
+    }
+    return ($status, $output, $content_type) unless $status == OK;
 
-  # sometimes we end up here with "OK" but with no content ... gah.
-  if ($cache and $output and $status != SERVER_ERROR and !$self->no_cache) {
-    $cache_info->{meta_data}->{content_type} = $content_type if $content_type;
-    $cache_info->{meta_data}->{status}       = $status || $self->r->status;
-    $cache->store( %$cache_info, data => $output );
-  }
-  
-  $status = $self->post_process($output);
+    # sometimes we end up here with "OK" but with no content ... gah.
+    if ($cache and $output and $status != SERVER_ERROR and !$self->no_cache) {
+        $cache_info->{meta_data}->{content_type} = $content_type if $content_type;
+        $cache_info->{meta_data}->{status}       = $status || $self->r->status;
+        $cache->store(%$cache_info, data => $output);
+    }
 
-  return ($status, $output, $content_type);
+    $status = $self->post_process($output);
+
+    return ($status, $output, $content_type);
 }
 
 sub no_cache {
@@ -198,14 +204,14 @@ sub no_cache {
     return $self->{no_cache};
 }
 
-sub cache_info {}
+sub cache_info   { }
 sub post_process { return OK }
 
 sub _cleanup_params {
-  my $self = shift;
-  for my $param (keys %{$self->{params}}) {
-    delete $self->{params}->{$param};
-  }
+    my $self = shift;
+    for my $param (keys %{$self->{params}}) {
+        delete $self->{params}->{$param};
+    }
 }
 
 sub r {
@@ -213,29 +219,31 @@ sub r {
     return shift->request;
 }
 
-
 sub evaluate_template {
-  my $self      = shift;
-  my $template  = shift;
+    my $self     = shift;
+    my $template = shift;
 
-  my $tpl_params    = { %{$self->tpl_params }, ($_[0] and ref $_[0] eq 'HASH') ? %{$_[0]} : @_ };
+    my $tpl_params =
+      {%{$self->tpl_params}, ($_[0] and ref $_[0] eq 'HASH') ? %{$_[0]} : @_};
 
-  local $tpl_params->{siteconfig} = $self->site && $self->config->site->{$self->site};
+    local $tpl_params->{siteconfig} = $self->site && $self->config->site->{$self->site};
 
-  local $tpl_params->{combust} = $self;
+    local $tpl_params->{combust} = $self;
 
-  local $tpl_params->{site} = $tpl_params->{site} || $self->site;
+    local $tpl_params->{site} = $tpl_params->{site} || $self->site;
 
-  my $output = eval { $self->tt->process($template, $tpl_params, { site => $tpl_params->{site} } ) };
+    my $output =
+      eval { $self->tt->process($template, $tpl_params, {site => $tpl_params->{site}}) };
 
-  unless(defined $output) {
-      my $err = $self->tt->error || $@;
-      warn( (ref $self ? ref $self : $self) . "  - ". $self->request->request_url
-            . " - error processing template $template: $err");
-      die $err;
-  }
+    unless (defined $output) {
+        my $err = $self->tt->error || $@;
+        warn(   (ref $self ? ref $self : $self) . "  - "
+              . $self->request->request_url
+              . " - error processing template $template: $err");
+        die $err;
+    }
 
-  return $output;
+    return $output;
 }
 
 my $ctemplate;
@@ -254,170 +262,170 @@ sub provider {
 }
 
 sub content_type {
-  shift->request->content_type(@_);
+    shift->request->content_type(@_);
 }
 
 sub send_cached {
-  my ($self, $cache, $content_type) = @_;
+    my ($self, $cache, $content_type) = @_;
 
-  $self->request->update_mtime($cache->{created_timestamp});
+    $self->request->update_mtime($cache->{created_timestamp});
 
-  $content_type = $cache->{meta_data}->{content_type}
+    $content_type = $cache->{meta_data}->{content_type}
       if $cache->{meta_data}->{content_type};
 
-  return $self->send_output($cache->{data}, $content_type);
+    return $self->send_output($cache->{data}, $content_type);
 }
 
 sub default_character_set {
-  'utf-8'
+    'utf-8';
 }
 
 sub send_output {
-  my $self = shift;
+    my $self = shift;
 
-  #cluck "in send output!";
-  
-  my $output = shift;
-  my $content_type = shift || $self->content_type || 'text/html';
+    #cluck "in send output!";
 
-  unless (defined $output) {
-    cluck "send_output called with undefined output";
-    return [404];
-  }
+    my $output       = shift;
+    my $content_type = shift || $self->content_type || 'text/html';
 
-  # for some reason mod_perl will sometimes forget to dereference
-  # a reference, so let's not try printing those anymore.
-  $output = $$output if ref $output and reftype($output) ne 'GLOB';
-
-  $self->cookies->bake_cookies;
-
-  my %headers = $config->static_headers($self->site);
-  while (my ($k, $v) = each %headers)  {
-    $self->request->header_out($k, $v);
-  }
-
-  if ($self->no_cache) {
-      my $req = $self->request;
-
-      $req->header_out('Expires', HTTP::Date::time2str(time() - 300))
-        unless $req->header_out('Expires');
-
-      $req->header_out('Cache-Control', 'no-cache,must-revalidate')
-        unless $req->header_out('Cache-Control');
-
-      $req->header_out('Pragma', 'no-cache')
-        unless $req->header_out('Pragma');
-  }
-
-  my $length;
-
-  my $is_text = $content_type =~ m!^(text/|application/json$)!;
-
-  if (ref($output) and reftype($output) eq "GLOB") {
-      $length = (stat($output))[7]
-        unless tied(*$output);    # stat does not work on tied handles
-  }
-  else {
-
-      # forcing encode_utf8 seems to work, but probably isn't right.
-      if ($is_text and !ref $output) {
-          $output = encode_utf8($output);
-      }
-
-      if ($is_text and ($self->request->header_in('Accept-Encoding') || '') =~ m/\bgzip\b/) {
-          my $compressed;
-          gzip((ref $output ? $output : \$output), \$compressed)
-            or die "gzip failed: $GzipError\n";
-          $output = $compressed;
-
-          $self->request->header_out('Content-Encoding' => 'gzip');
-          $self->request->header_out(
-              'Vary' => join ", ",
-              grep {$_} $self->request->header_out('Vary'), 'Accept-Encoding'
-          );
+    unless (defined $output) {
+        cluck "send_output called with undefined output";
+        return [404];
     }
 
-    # length in bytes
-    $length = do { use bytes; length($output) };
-  }
+    # for some reason mod_perl will sometimes forget to dereference
+    # a reference, so let's not try printing those anymore.
+    $output = $$output if ref $output and reftype($output) ne 'GLOB';
 
-  $self->request->header_out('Content-Length' => $length)
-    if defined $length;
+    $self->cookies->bake_cookies;
 
-  $content_type .= "; charset=" . $self->default_character_set
-    if $content_type =~ m/^text/ and $content_type !~ m/charset=/;
-  $self->content_type($content_type);
-  #warn "content_type: $content_type";
+    my %headers = $config->static_headers($self->site);
+    while (my ($k, $v) = each %headers) {
+        $self->request->header_out($k, $v);
+    }
 
-  $self->request->update_mtime(time) unless $self->request->modified_time;
+    if ($self->no_cache) {
+        my $req = $self->request;
 
-  if (!$self->request->header_out('Last-Modified')) {
-      $self->request->header_out(
-          'Last-Modified' => HTTP::Date::time2str($self->request->modified_time));
-  }
+        $req->header_out('Expires', HTTP::Date::time2str(time() - 300))
+          unless $req->header_out('Expires');
 
-  if (!$self->request->header_out('Server')) {
-      $self->request->header_out(Server => 'Combust/Plack (Perl)');
-  }
+        $req->header_out('Cache-Control', 'no-cache,must-revalidate')
+          unless $req->header_out('Cache-Control');
 
+        $req->header_out('Pragma', 'no-cache')
+          unless $req->header_out('Pragma');
+    }
 
-  #if ((my $rc = $r->meets_conditions) != OK) {
-  #  $r->status($rc);
-  #  return $rc;
-  #}
+    my $length;
 
-  # if all that is requested is HEAD
-  # don't send the body
-  # return OK if $r->header_only;
+    my $is_text = $content_type =~ m!^(text/|application/json$)!;
 
-  $self->request->response->status(200) unless $self->request->response->status;
+    if (ref($output) and reftype($output) eq "GLOB") {
+        $length = (stat($output))[7]
+          unless tied(*$output);    # stat does not work on tied handles
+    }
+    else {
 
-  $self->request->response->content(ref $output
-      && reftype($output) eq "GLOB" ? $output : [$output]);
+        # forcing encode_utf8 seems to work, but probably isn't right.
+        if ($is_text and !ref $output) {
+            $output = encode_utf8($output);
+        }
 
-  my $response_ref = $self->request->response->finalize;
-  $self->{_response_ref} = $response_ref;
+        if ($is_text and ($self->request->header_in('Accept-Encoding') || '') =~ m/\bgzip\b/) {
+            my $compressed;
+            gzip((ref $output ? $output : \$output), \$compressed)
+              or die "gzip failed: $GzipError\n";
+            $output = $compressed;
 
-  #use Data::Dump qw(pp);
-  #warn "RESP REF: ", pp($response_ref);
+            $self->request->header_out('Content-Encoding' => 'gzip');
+            $self->request->header_out(
+                'Vary' => join ", ",
+                grep {$_} $self->request->header_out('Vary'), 'Accept-Encoding'
+            );
+        }
 
-  return $response_ref;
+        # length in bytes
+        $length = do { use bytes; length($output) };
+    }
+
+    $self->request->header_out('Content-Length' => $length)
+      if defined $length;
+
+    $content_type .= "; charset=" . $self->default_character_set
+      if $content_type =~ m/^text/ and $content_type !~ m/charset=/;
+    $self->content_type($content_type);
+
+    #warn "content_type: $content_type";
+
+    $self->request->update_mtime(time) unless $self->request->modified_time;
+
+    if (!$self->request->header_out('Last-Modified')) {
+        $self->request->header_out(
+            'Last-Modified' => HTTP::Date::time2str($self->request->modified_time));
+    }
+
+    if (!$self->request->header_out('Server')) {
+        $self->request->header_out(Server => 'Combust/Plack (Perl)');
+    }
+
+    #if ((my $rc = $r->meets_conditions) != OK) {
+    #  $r->status($rc);
+    #  return $rc;
+    #}
+
+    # if all that is requested is HEAD
+    # don't send the body
+    # return OK if $r->header_only;
+
+    $self->request->response->status(200) unless $self->request->response->status;
+
+    $self->request->response->content(ref $output
+          && reftype($output) eq "GLOB" ? $output : [$output]);
+
+    my $response_ref = $self->request->response->finalize;
+    $self->{_response_ref} = $response_ref;
+
+    #use Data::Dump qw(pp);
+    #warn "RESP REF: ", pp($response_ref);
+
+    return $response_ref;
 }
 
 sub redirect {
-  my $self = shift;
-  my $url = shift;
-  my $permanent = shift;
+    my $self      = shift;
+    my $url       = shift;
+    my $permanent = shift;
 
-  $url = $url->abs if ref $url =~ m/^URI/;
+    $url = $url->abs if ref $url =~ m/^URI/;
 
-  # this should really check for a complete URI or some such; we'll do
-  # that when it breaks on a ftp:// or whatever redirect :-)
-  unless ($url =~ m!^https?://!i) {
-    $url = $config->base_url($self->site) . $url;
-  }
+    # this should really check for a complete URI or some such; we'll do
+    # that when it breaks on a ftp:// or whatever redirect :-)
+    unless ($url =~ m!^https?://!i) {
+        $url = $config->base_url($self->site) . $url;
+    }
 
-  #use Carp qw(cluck);
-  #warn "redirecting to [$url]";
+    #use Carp qw(cluck);
+    #warn "redirecting to [$url]";
 
-  $self->request->header_out('Location' => $url);
+    $self->request->header_out('Location' => $url);
 
-  my $status = $permanent ? MOVED : REDIRECT;
-  $self->request->response->status($status);
+    my $status = $permanent ? MOVED : REDIRECT;
+    $self->request->response->status($status);
 
-  my $url_escaped = HTML::Entities::encode_entities($url);
+    my $url_escaped = HTML::Entities::encode_entities($url);
 
-  my $data = <<EOH;
+    my $data = <<EOH;
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
 <HTML><HEAD><TITLE>Redirect...</TITLE></HEAD><BODY>The document has moved <A HREF="$url_escaped">here</A>.<P></BODY></HTML>
 EOH
 
-  # allow setting custom headers etc - this doesn't bail out if the
-  # status is wrong, unlike on the regular requests. (Just because we
-  # don't care for that feature anyway).
-  $self->post_process( $data );
+    # allow setting custom headers etc - this doesn't bail out if the
+    # status is wrong, unlike on the regular requests. (Just because we
+    # don't care for that feature anyway).
+    $self->post_process($data);
 
-  return ($status, $data, 'text/html');
+    return ($status, $data, 'text/html');
 }
 
 sub cookies {
@@ -425,21 +433,18 @@ sub cookies {
     return $self->{_cookies} if $self->{_cookies};
 
     my $domain =
-      $self->site && $self->config->site->{$self->site}->{cookie_domain}
-        || $self->request->uri->host
-        || '';  
+         $self->site && $self->config->site->{$self->site}->{cookie_domain}
+      || $self->request->uri->host
+      || '';
 
-      my $cookies = Combust::Cookies->new(
-        $self->request,
-        domain => $domain,
-      );
+    my $cookies = Combust::Cookies->new($self->request, domain => $domain,);
 
     return $self->{_cookies} = $cookies;
 }
 
 sub cookie {
-  my $self = shift;
-  $self->cookies->cookie(@_);
+    my $self = shift;
+    $self->cookies->cookie(@_);
 }
 
 sub auth_token {
@@ -447,25 +452,28 @@ sub auth_token {
     return $self->{_auth_token} if $self->{_auth_token};
     my $cookie = $self->cookie('uiq');
     my ($time, $uid) = split /-/, $cookie || '';
+
     # reset the auth_token twice a day
-    $self->cookie('uiq', time . '-' . sha1_hex(time . rand)) unless $time and $time > time - 43200;
-    return $self->{_auth_token} = _calc_auth_token( $self->cookie('uiq') );
+    $self->cookie('uiq', time . '-' . sha1_hex(time . rand))
+      unless $time and $time > time - 43200;
+    return $self->{_auth_token} = _calc_auth_token($self->cookie('uiq'));
 }
 
 sub _calc_auth_token {
     my $cookie = shift;
     my ($time, $uid) = split /-/, $cookie;
+
     # let the old auth tokens be good for up to a day
-    ($time, my $secret) = get_secret(type => 'auth_token', time => $time, expires_at => $time + 86400 );
-    return '2-' . sha1_hex( $secret . $cookie);
+    ($time, my $secret) =
+      get_secret(type => 'auth_token', time => $time, expires_at => $time + 86400);
+    return '2-' . sha1_hex($secret . $cookie);
 }
 
 sub check_auth_token {
-    my $self = shift;
+    my $self        = shift;
     my $token_param = $self->req_param('auth_token') or return 0;
     return $token_param eq $self->auth_token;
 }
-
 
 # default api_class tries to guess what you wanted
 sub api_class {
@@ -479,24 +487,22 @@ sub api {
     my ($self, $method, $params, $args) = @_;
 
     my $api_params = {
-             params   => $params,
-             ($args ? (%$args) : ()),
-       };
+        params => $params,
+        ($args ? (%$args) : ()),
+    };
 
-    if ( !exists $api_params->{user} and $self->can('user') ) {
+    if (!exists $api_params->{user} and $self->can('user')) {
         $api_params->{user} = $self->user;
     }
 
-    return $self->api_class->call
-      ($method,
-       $api_params,
-      );
+    return $self->api_class->call($method, $api_params,);
 }
 
 sub deployment_mode {
     my $self = shift;
-    my $dm = $self->config->site->{$self->site}->{deployment_mode} || 'test';
-    warn "INVALID deployment_mode CONFIG for ", $self->site, "! Use devel, test or prod\n" unless $dm =~ m/^(devel|test|prod)$/;
+    my $dm   = $self->config->site->{$self->site}->{deployment_mode} || 'test';
+    warn "INVALID deployment_mode CONFIG for ", $self->site, "! Use devel, test or prod\n"
+      unless $dm =~ m/^(devel|test|prod)$/;
     $dm;
 }
 

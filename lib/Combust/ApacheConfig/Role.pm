@@ -2,17 +2,18 @@ package Combust::ApacheConfig::Role;
 use Moose::Role;
 
 has 'apache_config_file' => (
-  is => 'ro',
-  isa => 'Str',
-  default => sub { my $work_path = Combust::Config->new->work_path;
-                   return $work_path . '/httpd.conf';
-               }
+    is      => 'ro',
+    isa     => 'Str',
+    default => sub {
+        my $work_path = Combust::Config->new->work_path;
+        return $work_path . '/httpd.conf';
+    }
 );
 
 has 'apache_config' => (
-   is => 'rw',
-   isa => 'HashRef',
-   lazy_build => 1,
+    is         => 'rw',
+    isa        => 'HashRef',
+    lazy_build => 1,
 );
 
 sub _build_apache_config {

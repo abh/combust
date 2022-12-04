@@ -9,20 +9,20 @@ use base qw(JSON::XS);
 use Combust::JSON::Object ();
 
 sub decode_class {
-    my ( $self, $class ) = @_;
+    my ($self, $class) = @_;
 
     # Inject JSON-ness into the class (if it is not there)
     Combust::JSON::Object->inject_into($class);
 
-    my $key = $class->JSON_key;
+    my $key      = $class->JSON_key;
     my $thaw_sub = $class->can('JSON_thaw');
-    $self->filter_json_single_key_object( $key => $thaw_sub );
+    $self->filter_json_single_key_object($key => $thaw_sub);
 
     $self;
 }
 
 sub encode_class {
-    my ( $self, $class ) = @_;
+    my ($self, $class) = @_;
     $self->allow_blessed(1);
     $self->convert_blessed(1);
 
@@ -33,7 +33,7 @@ sub encode_class {
 }
 
 sub handle_class {
-    my ( $self, $class ) = @_;
+    my ($self, $class) = @_;
     $self->encode_class($class);
     $self->decode_class($class);
     $self;

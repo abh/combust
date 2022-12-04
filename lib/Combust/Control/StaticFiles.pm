@@ -6,7 +6,7 @@ my %cache;
 
 sub __static {
     my $self = shift;
-    return $cache{ $self->site } ||= Combust::StaticFiles->new( site => $self->site );
+    return $cache{$self->site} ||= Combust::StaticFiles->new(site => $self->site);
 }
 
 sub static_url {

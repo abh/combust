@@ -10,7 +10,7 @@ use vars qw($FILTER_NAME);
 $FILTER_NAME = 'js';
 
 sub new {
-    my($self, $context, @args) = @_;
+    my ($self, $context, @args) = @_;
     my $name = $args[0] || $FILTER_NAME;
     $context->define_filter($name, \&encode_js, 0);
     return $self;

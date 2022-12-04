@@ -3,13 +3,12 @@ use strict;
 use URI;
 use overload
   '""'  => sub { shift->[1] },
-  'cmp' => sub { shift->[1] cmp shift }
-  ;
+  'cmp' => sub { shift->[1] cmp shift };
 
 sub new {
     my $class = shift;
-    my $uri = ref $_[0] ? $_[0] : URI->new(@_);
-    return bless [ $uri, $_[1] ], $class;
+    my $uri   = ref $_[0] ? $_[0] : URI->new(@_);
+    return bless [$uri, $_[1]], $class;
 }
 
 sub AUTOLOAD {

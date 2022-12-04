@@ -14,29 +14,29 @@ my $config = Combust::Config->new;
 use namespace::clean -except => 'meta';
 
 has sites => (
-  is  => 'rw',
-  isa => 'HashRef[Combust::Site]',
-  default => sub { {} },
+    is      => 'rw',
+    isa     => 'HashRef[Combust::Site]',
+    default => sub { {} },
 );
 
 has domain_mapping => (
-  is  => 'rw',
-  isa => 'HashRef',
-  default => sub { {} },
+    is      => 'rw',
+    isa     => 'HashRef',
+    default => sub { {} },
 );
 
 has errorlog_stderr => (
-  is      => 'ro',
-  isa     => 'Bool',
-  default => sub { 1 },
+    is      => 'ro',
+    isa     => 'Bool',
+    default => sub {1},
 );
 
 sub setup_mappings {
     my $self = shift;
 
     my %domains;
-    for my $site (values %{ $self->sites }) {
-        for my $domain ( $site->domain, $site->domain_alias_list ) {
+    for my $site (values %{$self->sites}) {
+        for my $domain ($site->domain, $site->domain_alias_list) {
             if ($domains{$domain} && $domains{$domain} ne $site->name) {
                 die "$domain specified twice (for $domains{$domain} and ", $site->name;
             }
@@ -61,14 +61,14 @@ sub setup_request {
     my ($self, $env) = @_;
 
     my $request = Combust::Request::Plack->new($env);
-    my $site = $self->map_domain_site($request);
+    my $site    = $self->map_domain_site($request);
     $request->site($site);
 
     return $request;
 }
 
 has 'rewriter' => (
-    is => 'rw',
+    is       => 'rw',
     required => 0,
 );
 
@@ -88,8 +88,8 @@ sub exec {
 
     # todo: this is a little dubious, but ... practical?
     if ($request->path eq "/combust-healthz") {
-        return [ 200, [ 'Content-Type' => 'text/plain' ], [ "Combust says ok\n" ] ];
-    };
+        return [200, ['Content-Type' => 'text/plain'], ["Combust says ok\n"]];
+    }
 
     my $match = $request->site->router->match($request->env);
     {
@@ -99,9 +99,10 @@ sub exec {
     }
 
     my $controller = $match->{controller}->new(request => $request);
-    my $r = $controller->run($match->{action} || 'render');
+    my $r          = $controller->run($match->{action} || 'render');
 
     use Data::Dump qw(pp);
+
     # warn "RETURN: ", pp($r);
 
     return $r;
@@ -168,7 +169,7 @@ sub _logfh {
 sub reference {
     my $self = shift;
 
-    my $app = sub { $self->exec(@_) };
+    my $app   = sub { $self->exec(@_) };
     my $logfh = $self->_logfh;
 
     $logfh->autoflush(1);
@@ -181,12 +182,11 @@ sub reference {
         if ($config->apache_reload) {
             enable "Refresh", cooldown => 2;
         }
-        enable "Plack::Middleware::XForwardedFor",
-          (@trusted_ips ? (trust => \@trusted_ips) : ());
+        enable "Plack::Middleware::XForwardedFor", (@trusted_ips ? (trust => \@trusted_ips) : ());
         enable_if { $_[0]->{PATH_INFO} ne "/combust-healthz" }
-            "AccessLog",
-              logger => sub { print $logfh @_ },
-              format => qq{%h %V %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i "};
+        "AccessLog",
+          logger => sub { print $logfh @_ },
+          format => qq{%h %V %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i "};
         enable "Options";
         inner();
         $app;

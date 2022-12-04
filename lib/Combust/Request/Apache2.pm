@@ -18,9 +18,8 @@ sub _r {
     my $r = Apache2::RequestUtil->request;
 
     # TEMP_DIR is configured in Combust::Notes
-    return $self->{_r} = Apache2::Request->new( $r ); 
+    return $self->{_r} = Apache2::Request->new($r);
 }
-
 
 sub req_param {
     shift->_r->param(@_);
@@ -43,13 +42,13 @@ sub hostname {
 }
 
 sub header_in {
-    my ( $req, $key, $value ) = @_;
+    my ($req, $key, $value) = @_;
     return $req->_r->headers_in->{$key} = $value if $value;
     return $req->_r->headers_in->{$key};
 }
 
 sub header_out {
-    my ( $req, $key, $value ) = @_;
+    my ($req, $key, $value) = @_;
     return $req->_r->headers_out->{$key} = $value if $value;
     return $req->_r->headers_out->{$key};
 }
@@ -67,7 +66,7 @@ sub update_mtime {
 }
 
 sub send_http_header {
-    my ( $self, $ct ) = @_;
+    my ($self, $ct) = @_;
     $ct ||= $self->content_type;
     my $r = $self->_r;
     $r = $r->main || $r;
@@ -81,8 +80,8 @@ sub sendfile {
 }
 
 sub get_cookie {
-    my ( $self, $name ) = @_;
-    unless ( $self->{cookies} ) {
+    my ($self, $name) = @_;
+    unless ($self->{cookies}) {
         $self->{cookies} = Apache2::Cookie->fetch || {};
     }
     my $c = $self->{cookies}->{$name};
@@ -90,7 +89,7 @@ sub get_cookie {
 }
 
 sub set_cookie {
-    my ( $self, $name, $value, $args ) = @_;
+    my ($self, $name, $value, $args) = @_;
 
     my $cookie = Apache2::Cookie->new(
         $self->_r,
@@ -98,20 +97,19 @@ sub set_cookie {
         -value  => $value,
         -domain => $args->{domain},
         (   $args->{expires}
-            ? ( -expires => $args->{expires} )
+            ? (-expires => $args->{expires})
             : ()
         ),
         -path => $args->{path},
     );
 
-    push @{ $self->{cookies_out} }, $cookie;
+    push @{$self->{cookies_out}}, $cookie;
 }
 
 sub bake_cookies {
     my $self = shift;
-    my $r = $self->_r;
-    $_->bake($r) for @{ $self->{cookies_out} };
+    my $r    = $self->_r;
+    $_->bake($r) for @{$self->{cookies_out}};
 }
-
 
 1;

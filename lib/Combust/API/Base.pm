@@ -7,7 +7,7 @@ sub new {
 }
 
 sub user {
-    shift->args->{user}
+    shift->args->{user};
 }
 
 sub args {
@@ -16,18 +16,19 @@ sub args {
 
 sub _required_param {
     my $self = shift;
-    my $p = $self->args->{params};
+    my $p    = $self->args->{params};
     if (my @missing = grep { !defined $p->{$_} || $p->{$_} eq '' } @_) {
-      die( (@missing == 1)
-           ? "Required parameter @missing missing\n"
-           : "Required parameters (@missing) missing\n");
-  }
+        die((@missing == 1)
+            ? "Required parameter @missing missing\n"
+            : "Required parameters (@missing) missing\n"
+        );
+    }
     return @{$p}{@_};
 }
 
 sub _optional_param {
     my $self = shift;
-    my $p = $self->args->{params};
+    my $p    = $self->args->{params};
     return @{$p}{@_};
 }
 
@@ -37,7 +38,7 @@ sub evaluate_template {
     my $template = $args->{template};
     my $tt       = Combust::Template->new();
 
-    my $out = eval { $tt->process($template, $params, { site => $self->{args}->{site}->name }) };
+    my $out = eval { $tt->process($template, $params, {site => $self->{args}->{site}->name}) };
     die "error rendering template '$template': $@" if $@;
     return $out;
 }

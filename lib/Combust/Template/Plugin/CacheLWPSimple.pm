@@ -28,26 +28,23 @@ sub new {
     my ($class, $context, $params) = @_;
 
     my $ua = LWP::UserAgent->new(
-				 keep_alive => 1,
-				 timeout => 30,
-				 agent => "Combust-LWPSimple/$VERSION",
-				);
+        keep_alive => 1,
+        timeout    => 30,
+        agent      => "Combust-LWPSimple/$VERSION",
+    );
 
-    my $cache = Cache::FileCache->new( { $params ? %$params : (),
-					 cache_root => "$ENV{CBROOT}/var/cache"
-				       }
-					);
+    my $cache =
+      Cache::FileCache->new({$params ? %$params : (), cache_root => "$ENV{CBROOT}/var/cache"});
 
     my $self = bless {
-                      CACHE   => $cache,
-                      CONFIG  => $params,
-                      CONTEXT => $context,
-		      UA      => $ua,
-                     }, $class;
+        CACHE   => $cache,
+        CONFIG  => $params,
+        CONTEXT => $context,
+        UA      => $ua,
+    }, $class;
 
     return $self;
 }
-
 
 #------------------------------------------------------------------------
 # $cache->include({
@@ -64,19 +61,14 @@ sub get {
     die "Required paramater 'url' not provided"
       unless exists $params->{url};
 
-    my $key = join(
-                   ':',
-                   (
-                    $params->{url},
-                    map { "$_=$cache_keys->{$_}" } keys %{$cache_keys}
-                   )
-                  );
+    my $key    = join(':', ($params->{url}, map {"$_=$cache_keys->{$_}"} keys %{$cache_keys}));
     my $result = $self->{CACHE}->get($key);
     if (!$result) {
-      $result = $self->{UA}->get( $params->{url} );
-      $result = $result->content if $result;
-      # $result = $self->{CONTEXT}->$action($params->{template});
-      $self->{CACHE}->set($key, $result, $params->{ttl});
+        $result = $self->{UA}->get($params->{url});
+        $result = $result->content if $result;
+
+        # $result = $self->{CONTEXT}->$action($params->{template});
+        $self->{CACHE}->set($key, $result, $params->{ttl});
     }
     return $result;
 }

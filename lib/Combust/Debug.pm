@@ -3,21 +3,21 @@ package Combust::Debug;
 our %CBDEBUG;
 
 BEGIN {
-  if (my $CBDEBUG = $ENV{CBDEBUG}) {
-    @CBDEBUG{split /,/, $CBDEBUG} = ();
-  }
+    if (my $CBDEBUG = $ENV{CBDEBUG}) {
+        @CBDEBUG{split /,/, $CBDEBUG} = ();
+    }
 }
 
 sub import {
-  shift;
-  my $pkg = caller;
-  my %opt = ($pkg, '###', @_);
-  my @opt = map { $opt{$_} } grep { exists $CBDEBUG{$_} } keys %opt
-    or return;
+    shift;
+    my $pkg = caller;
+    my %opt = ($pkg, '###', @_);
+    my @opt = map { $opt{$_} } grep { exists $CBDEBUG{$_} } keys %opt
+      or return;
 
-  @_ = ('Smart::Comments', @opt);
-  require Smart::Comments;
-  goto &{Smart::Comments->can('import')};
+    @_ = ('Smart::Comments', @opt);
+    require Smart::Comments;
+    goto &{Smart::Comments->can('import')};
 }
 
 1;

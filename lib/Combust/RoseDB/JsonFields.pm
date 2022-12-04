@@ -7,14 +7,15 @@ use Sub::Install ();
 use JSON::XS qw( encode_json decode_json );
 
 sub import {
-    my $class = shift;
+    my $class  = shift;
     my $caller = caller;
     for my $field (@_) {
-        Sub::Install::install_sub({
-            code => $class->make_json_accessor($field),
-            into => $caller,
-            as   => $field,
-        });
+        Sub::Install::install_sub(
+            {   code => $class->make_json_accessor($field),
+                into => $caller,
+                as   => $field,
+            }
+        );
     }
 }
 
@@ -28,10 +29,10 @@ sub make_json_accessor {
             my $h = shift;
             $self->$priv_accessor($h ? encode_json($h) : undef);
             return $h;
-         }
+        }
 
-         my $v = $self->$priv_accessor or return undef;
-         return eval { decode_json($v) };
+        my $v = $self->$priv_accessor or return undef;
+        return eval { decode_json($v) };
     };
 }
 

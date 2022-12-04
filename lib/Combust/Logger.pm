@@ -1,4 +1,5 @@
 package Combust::Logger;
+
 # vim: ts=8:sw=2:expandtab
 
 use strict;
@@ -18,20 +19,20 @@ use JSON::XS;
 my $json = JSON::XS->new;
 
 our @EXPORT = qw(
-  logconfig
-  logtofile
-  logdie
-  logalert
-  logerr
-  logwarn
-  logsay
-  logtrace
-  logdebug
-  logtimes
+    logconfig
+    logtofile
+    logdie
+    logalert
+    logerr
+    logwarn
+    logsay
+    logtrace
+    logdebug
+    logtimes
 );
 
 our $Prefix  = $Apache::Server::Starting ? 'httpd' : ($0 =~ m:([^/]+)$:)[0];
-our $Verbose = 0 && $Apache::Server::Starting; # avoid used once warning
+our $Verbose = 0 && $Apache::Server::Starting;    # avoid used once warning
 our $Domain  = 'unix';
 our $sayfh   = \*STDERR;
 our $saywarn = 0;
@@ -44,158 +45,163 @@ our %Count;
 
 my @orig_argv;
 
-BEGIN { @orig_argv = ($0, @ARGV) } # record original argv before options are removed
+BEGIN { @orig_argv = ($0, @ARGV) }    # record original argv before options are removed
 
 my $opened;
 our $do_syslog;
 my $only_syslog;
 
 sub prefix {
-  return localtime()." $Prefix\[$$]: ";
+    return localtime() . " $Prefix\[$$]: ";
 }
 
 sub _openlog {
-  closelog() if $opened;
-  return unless $do_syslog;
-  setlogsock( $Domain );
-  openlog $Prefix, 'pid', 'local0';
-  $opened = 1;
+    closelog() if $opened;
+    return unless $do_syslog;
+    setlogsock($Domain);
+    openlog $Prefix, 'pid', 'local0';
+    $opened = 1;
 }
 
 sub logconfig {
-  my %p = @_;
+    my %p = @_;
 
-  $Verbose = $p{verbose} if exists $p{verbose};
-  $Prefix  = $p{prefix}  if exists $p{prefix};
-  $Domain  = $p{domain}  if exists $p{domain};
-  $sayfh   = $p{sayfh}   if exists $p{sayfh};
-  $saywarn = $p{saywarn} if exists $p{saywarn};
-  $utf8    = $p{utf8}    if exists $p{utf8};
-  $do_syslog = $p{syslog} if exists $p{syslog};
-  $only_syslog = $p{only_syslog} if exists $p{only_syslog};
-  $SIG{__WARN__} = (ref $p{sigwarn}) ? $p{sigwarn} : \&_sigwarn if $p{sigwarn};
-  logbanner() if $p{banner};
+    $Verbose       = $p{verbose}                                  if exists $p{verbose};
+    $Prefix        = $p{prefix}                                   if exists $p{prefix};
+    $Domain        = $p{domain}                                   if exists $p{domain};
+    $sayfh         = $p{sayfh}                                    if exists $p{sayfh};
+    $saywarn       = $p{saywarn}                                  if exists $p{saywarn};
+    $utf8          = $p{utf8}                                     if exists $p{utf8};
+    $do_syslog     = $p{syslog}                                   if exists $p{syslog};
+    $only_syslog   = $p{only_syslog}                              if exists $p{only_syslog};
+    $SIG{__WARN__} = (ref $p{sigwarn}) ? $p{sigwarn} : \&_sigwarn if $p{sigwarn};
+    logbanner() if $p{banner};
 
-  if ($utf8) {
-    binmode(STDERR,":utf8");
-    binmode($sayfh,":utf8");
-  }
+    if ($utf8) {
+        binmode(STDERR, ":utf8");
+        binmode($sayfh, ":utf8");
+    }
 
-  _openlog();
+    _openlog();
 }
 
 sub _syslog {
-  my $type = shift;
-  ++$Count{$type};
-  return unless $do_syslog or $type eq 'alert';
-  _openlog() unless $opened;
-  syslog($type, "%s", $_) for (split /\r?\n/, $_[0]);
+    my $type = shift;
+    ++$Count{$type};
+    return     unless $do_syslog or $type eq 'alert';
+    _openlog() unless $opened;
+    syslog($type, "%s", $_) for (split /\r?\n/, $_[0]);
 }
 
 # ------ handlers ------
 
 sub _dowarn {
-  my ($level, $msg) = @_;
-  _syslog $level, $msg;
-  return if $only_syslog;
-  local $done_syslog = 1; # prevent syslog being called twice
-  my $prefix = prefix();
-  my $has_newline = ($msg =~ m/\n$/);
-  local $\;
-  print $sayfh "$prefix$msg".($has_newline ? "" : "\n") if $saywarn;
-  # here we possibly trigger a __WARN__ hook, possibly calling our _sigwarn
-  return warn $prefix, $msg if $has_newline;
-  carp $prefix, $msg; # ends up calling warn
+    my ($level, $msg) = @_;
+    _syslog $level, $msg;
+    return if $only_syslog;
+    local $done_syslog = 1;    # prevent syslog being called twice
+    my $prefix      = prefix();
+    my $has_newline = ($msg =~ m/\n$/);
+    local $\;
+    print $sayfh "$prefix$msg" . ($has_newline ? "" : "\n") if $saywarn;
+
+    # here we possibly trigger a __WARN__ hook, possibly calling our _sigwarn
+    return warn $prefix, $msg if $has_newline;
+    carp $prefix, $msg;        # ends up calling warn
 }
 
-sub _sigwarn { # via __WARN__ hook
-  my $msg = _format(@_);
-  unless ($done_syslog) { # detect if we got here via _dowarn()
-    _syslog "warning", $msg;
-    $msg = prefix . $msg;
-    local $\;
-    print $sayfh $msg if $saywarn;
-  }
-  warn $msg;	# has a newline already
+sub _sigwarn {    # via __WARN__ hook
+    my $msg = _format(@_);
+    unless ($done_syslog) {    # detect if we got here via _dowarn()
+        _syslog "warning", $msg;
+        $msg = prefix . $msg;
+        local $\;
+        print $sayfh $msg if $saywarn;
+    }
+    warn $msg;                 # has a newline already
 }
 
 # ------ significant messages ------
 
 sub logdie {
-  # not terribly efficient; but we were going to "die" anyway, so ...
-  my $had_newline = chomp(my $msg = join (" ", @_));
-  $msg = _format(@_);
-  _syslog "err", "PANIC: $msg";
-  $msg = prefix . $msg;
-  $msg = Carp::shortmess($msg) unless $had_newline;
-  print $sayfh "$msg\n" if $saywarn;
-  die $msg,"\n";
+
+    # not terribly efficient; but we were going to "die" anyway, so ...
+    my $had_newline = chomp(my $msg = join(" ", @_));
+    $msg = _format(@_);
+    _syslog "err", "PANIC: $msg";
+    $msg = prefix . $msg;
+    $msg = Carp::shortmess($msg) unless $had_newline;
+    print $sayfh "$msg\n" if $saywarn;
+    die $msg, "\n";
 }
 
 sub logalert {
-  local $do_syslog = 1;
-  _dowarn("alert", _format(@_));
+    local $do_syslog = 1;
+    _dowarn("alert", _format(@_));
 }
 
 sub logerr {
-  _dowarn("err", _format('ERROR:', @_));
+    _dowarn("err", _format('ERROR:', @_));
 }
 
 sub logwarn {
-  _dowarn("warning", _format(@_));
+    _dowarn("warning", _format(@_));
 }
 
 # ------ normal and trace messages ------
 
 sub logsay {
-  chomp(my $msg = _format(@_));
-  _syslog "notice", $msg if $Verbose;
-  local $\;
-  print $sayfh prefix."$msg\n";
+    chomp(my $msg = _format(@_));
+    _syslog "notice", $msg if $Verbose;
+    local $\;
+    print $sayfh prefix . "$msg\n";
 }
 
 sub logtrace {
-  return unless $Verbose > 2;
-  local $Pretty = 1;
-  chomp(my $msg = _format(@_));
-  _syslog "info", $msg;
-  local $\;
-  print $sayfh prefix."$msg\n";
+    return unless $Verbose > 2;
+    local $Pretty = 1;
+    chomp(my $msg = _format(@_));
+    _syslog "info", $msg;
+    local $\;
+    print $sayfh prefix . "$msg\n";
 }
 
 sub logdebug {
-  return unless $Verbose > 4;
-  local $Pretty = 1;
-  chomp(my $msg = _format(@_));
-  _syslog "debug", $msg;
-  local $\;
-  print $sayfh prefix."$msg\n";
+    return unless $Verbose > 4;
+    local $Pretty = 1;
+    chomp(my $msg = _format(@_));
+    _syslog "debug", $msg;
+    local $\;
+    print $sayfh prefix . "$msg\n";
 }
 
 sub logtimes {
-  my $msg = shift || '';
-  my @base = @_; $base[0] ||= $^T;
-  my @now  = (time, (times)[0,1]);
-  
-  $msg = "[$msg] " if $msg;
-  $msg .= sprintf "wall: %02d:%02d user: %02d:%05.2f system: %02d:%05.2f",
-    map { my $d = $now[$_]-($base[$_]||0); my $m = int($d/60); ($m, $d-$m*60) } 0..2;
+    my $msg  = shift || '';
+    my @base = @_;
+    $base[0] ||= $^T;
+    my @now = (time, (times)[0, 1]);
 
-  _syslog "notice", $msg if $Verbose;
-  local $\;
-  print $sayfh prefix."$msg\n";
+    $msg = "[$msg] " if $msg;
+    $msg .= sprintf "wall: %02d:%02d user: %02d:%05.2f system: %02d:%05.2f",
+      map { my $d = $now[$_] - ($base[$_] || 0); my $m = int($d / 60); ($m, $d - $m * 60) } 0 .. 2;
 
-  @now;
+    _syslog "notice", $msg if $Verbose;
+    local $\;
+    print $sayfh prefix . "$msg\n";
+
+    @now;
 }
 
-
-# ---- 
+# ----
 
 sub _format {
     my @args = @_;
+
     #warn Data::Dumper->Dump([\@_], [qw(_)]);
-    my $msg = join " ", map { ref $_ ? $json->pretty($Pretty)->encode($_) : defined $_ ? $_ : 'UNDEF' } @args;
+    my $msg = join " ",
+      map { ref $_ ? $json->pretty($Pretty)->encode($_) : defined $_ ? $_ : 'UNDEF' } @args;
     if ($utf8) {
+
         # Our output streams are utf8. If string is not already utf8 and
         # does not decode as valid utf8, then upgrade from latin1
         utf8::upgrade($msg) unless utf8::is_utf8($msg) or utf8::decode($msg);
@@ -203,89 +209,93 @@ sub _format {
     else {
         # Our output streams cannot handle wide-characters. If msg is utf8 then
         # attempt to downgrade to latin1, otherwise just ensure the utf8 flag is not set
-        utf8::encode($msg) unless utf8::downgrade($msg,1);
+        utf8::encode($msg) unless utf8::downgrade($msg, 1);
     }
     $msg;
 }
 
-
 sub logtofile {
-  my %p = @_;
-  my $basename = $p{file} || $Prefix;
-  my $lock_mode = $p{lock} || 'die';
-  my @lt = localtime();
-  my $filename = sprintf "%s.log.%4d%02d%02d", $basename, $lt[5]+1900, $lt[4]+1, $lt[3];
-  my $lock_ok;
-  carp "Bad lockmode '$lock_mode'" unless $lock_mode =~ m/^(die|warn|none)$/;
+    my %p         = @_;
+    my $basename  = $p{file} || $Prefix;
+    my $lock_mode = $p{lock} || 'die';
+    my @lt        = localtime();
+    my $filename  = sprintf "%s.log.%4d%02d%02d", $basename, $lt[5] + 1900, $lt[4] + 1, $lt[3];
+    my $lock_ok;
+    carp "Bad lockmode '$lock_mode'" unless $lock_mode =~ m/^(die|warn|none)$/;
 
-  my $dir = $config->log_path;
-  -e $dir or mkpath $dir, 0;
-  if ($p{hierarchical}) {
-    my ($year,$month) = $filename =~ / (\d{4}) (\d{2}) \d{2} $/x;
-    my $subdir = "$dir/$year/$month";
-    -e $subdir or mkpath $subdir, 0;
-    $filename = "$year/$month/$filename";
-  }
-  my $path = "$dir/$filename";
-  open(STDOUT,">>$path") or die("logtofile: Can't open($path): $!");
-  select(STDOUT); $|=1;
-  $LogToFile = $path;
-
-  logconfig(
-    sayfh => \*STDOUT,   # write logsay etc to (new, current) stdout
-    sigwarn => 1,        # catch warn() and output with prefix
-    saywarn => 1,        # write warn etc msgs to sayfh (STDOUT) as well as via warn() to STDERR
-    syslog => 0,         # don't use syslog (stderr for cron will send email)
-    prefix => $basename, # match name used for logfile
-    banner => 1,
-  );
-
-  if (flock(STDOUT, LOCK_EX|LOCK_NB)) {
-    $lock_ok = 1;
-  }
-  else {
-    my $msg = "Can't lock $path (another $basename running?): $!";
-    print "$msg ($lock_mode)\n" unless $lock_mode eq 'none';
-    die   "$msg\n" if $lock_mode eq 'die';
-    logalert "$msg\n" if $lock_mode eq 'warn';
-  }
-
-  my $symlink  = "$dir/$basename.log";
-  my $readlink = readlink($symlink) || '';
-  unless ($readlink eq $filename) {
-    local *LOCK;
-    if ($readlink
-        and -f "$dir/$readlink"
-        # open in append (write) mode as solaris requires this for flock(LOCK_EX)
-        and open(LOCK, ">>$dir/$readlink")
-        and !flock(LOCK, LOCK_EX|LOCK_NB)) 
-    {
-      $lock_ok = 0; # report not okay as another process is still running
-      my $msg = "Can't lock $readlink (another $basename running?): $!";
-      print "$msg ($lock_mode)\n" unless $lock_mode eq 'none';
-      die   "$msg\n" if $lock_mode eq 'die';
-      logalert "$msg\n" if $lock_mode eq 'warn';
+    my $dir = $config->log_path;
+    -e $dir or mkpath $dir, 0;
+    if ($p{hierarchical}) {
+        my ($year, $month) = $filename =~ / (\d{4}) (\d{2}) \d{2} $/x;
+        my $subdir = "$dir/$year/$month";
+        -e $subdir or mkpath $subdir, 0;
+        $filename = "$year/$month/$filename";
     }
-    unlink $symlink;
-    symlink $filename, $symlink or warn "symlink($filename, $symlink): $!";
-  }
-  return $lock_ok;
+    my $path = "$dir/$filename";
+    open(STDOUT, ">>$path") or die("logtofile: Can't open($path): $!");
+    select(STDOUT);
+    $|         = 1;
+    $LogToFile = $path;
+
+    logconfig(
+        sayfh   => \*STDOUT, # write logsay etc to (new, current) stdout
+        sigwarn => 1,        # catch warn() and output with prefix
+        saywarn => 1,        # write warn etc msgs to sayfh (STDOUT) as well as via warn() to STDERR
+        syslog  => 0,        # don't use syslog (stderr for cron will send email)
+        prefix  => $basename,    # match name used for logfile
+        banner  => 1,
+    );
+
+    if (flock(STDOUT, LOCK_EX | LOCK_NB)) {
+        $lock_ok = 1;
+    }
+    else {
+        my $msg = "Can't lock $path (another $basename running?): $!";
+        print "$msg ($lock_mode)\n" unless $lock_mode eq 'none';
+        die "$msg\n"      if $lock_mode eq 'die';
+        logalert "$msg\n" if $lock_mode eq 'warn';
+    }
+
+    my $symlink  = "$dir/$basename.log";
+    my $readlink = readlink($symlink) || '';
+    unless ($readlink eq $filename) {
+        local *LOCK;
+        if ($readlink
+            and -f "$dir/$readlink"
+
+            # open in append (write) mode as solaris requires this for flock(LOCK_EX)
+            and open(LOCK, ">>$dir/$readlink") and !flock(LOCK, LOCK_EX | LOCK_NB)
+          )
+        {
+            $lock_ok = 0;    # report not okay as another process is still running
+            my $msg = "Can't lock $readlink (another $basename running?): $!";
+            print "$msg ($lock_mode)\n" unless $lock_mode eq 'none';
+            die "$msg\n"      if $lock_mode eq 'die';
+            logalert "$msg\n" if $lock_mode eq 'warn';
+        }
+        unlink $symlink;
+        symlink $filename, $symlink or warn "symlink($filename, $symlink): $!";
+    }
+    return $lock_ok;
 }
 
 sub logbanner {
-  $ShowExitBanner = 1;
-  my $hostname = hostname();
-  print $sayfh "\n\n===== ".localtime()." on $hostname\n"; # marker for restarts that can easily be searched for.
-  print $sayfh "STARTED (@orig_argv) pid=$$\n";
+    $ShowExitBanner = 1;
+    my $hostname = hostname();
+    print $sayfh "\n\n===== "
+      . localtime()
+      . " on $hostname\n";    # marker for restarts that can easily be searched for.
+    print $sayfh "STARTED (@orig_argv) pid=$$\n";
 }
 
-
 END {
-  return unless $ShowExitBanner;
-  # add marker for exit that can easily be searched for, also show end time and duration
-  my $died = ($?==255 && $@) ? $@ : ($?) ? "($?)" : "";
-  my $mins = (time-$^T)/60;
-  printf "----- ".localtime()." END after %.1f mins (%.1f hours). %s\n\n", $mins, $mins/60, $died;
+    return unless $ShowExitBanner;
+
+    # add marker for exit that can easily be searched for, also show end time and duration
+    my $died = ($? == 255 && $@) ? $@ : ($?) ? "($?)" : "";
+    my $mins = (time - $^T) / 60;
+    printf "----- " . localtime() . " END after %.1f mins (%.1f hours). %s\n\n", $mins, $mins / 60,
+      $died;
 }
 
 1;

@@ -6,9 +6,9 @@ sub _setup_user {
     my ($self, $bc_user) = @_;
     my $user;
 
-    my ($object_class) = ( $self->bc_user_class =~ m/(.*)::Manager($|=.*)/ );
+    my ($object_class) = ($self->bc_user_class =~ m/(.*)::Manager($|=.*)/);
     if ($object_class->can('username') and $bc_user->{username}) {
-        $user = $self->bc_user_class->fetch( username => $bc_user->{username} );
+        $user = $self->bc_user_class->fetch(username => $bc_user->{username});
     }
 
     unless ($user) {
