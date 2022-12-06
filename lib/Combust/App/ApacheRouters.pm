@@ -62,7 +62,7 @@ sub _connect_locations {
     for my $location (@locations) {
         my $loc_data = $locations->{$location};
 
-        Data::Dump::pp("loc_data for $location", $loc_data);
+        # Data::Dump::pp("loc_data for $location", $loc_data);
 
         next if $loc_data->{SetHandler} eq 'server-status';
         next if $loc_data->{SetHandler} eq 'cgi-script';
