@@ -68,7 +68,7 @@ exec $CBROOT/bin/perl `which starman` \
     --preload-app \
     -I$CBROOT/lib -I$CBROOTLOCAL/lib \
     $KEEPALIVE --keepalive-timeout=$KEEPALIVETIMEOUT \
+    --listen=0.0.0.0:$PORT \
     --workers=$WORKERS \
-    --port=$PORT $@ \
+    $@ \
     app.psgi
-
