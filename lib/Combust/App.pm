@@ -101,8 +101,7 @@ sub exec {
     my $controller = $match->{controller}->new(request => $request);
     my $r          = $controller->run($match->{action} || 'render');
 
-    use Data::Dump qw(pp);
-
+    # use Data::Dump qw(pp);
     # warn "RETURN: ", pp($r);
 
     return $r;
@@ -186,7 +185,7 @@ sub reference {
         enable_if { $_[0]->{PATH_INFO} ne "/combust-healthz" }
         "AccessLog",
           logger => sub { print $logfh @_ },
-          format => qq{%h %V %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i "};
+          format => qq{%h %V %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i" %{Request-ID}o};
         enable "Options";
         inner();
         $app;

@@ -6,6 +6,7 @@ Class::Accessor::Class
 Config::General
 Config::Simple
 Data::Dumper
+Data::ULID
 DBI
 Digest::SHA
 File::Path

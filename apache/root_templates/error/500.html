@@ -2,11 +2,12 @@
 <i>[% error_text %]</i></p><p>
 [% END %]
 
-Ouch! That didn't work, our server hit a bad gear.
+<p>Ouch! That didn't work, our server hit a bad gear.</p>
+
+[% rid = combust.request_id; IF rid %]
+<p><small>(request id <code>[% rid %]</code>)</small></p>
+[% END %]
 
 [% IF combust.config.site.${site}.siteadmin %]
 If the problem persists, please <a href="mailto:[% combust.config.site.${site}.siteadmin %]">send mail to the staff</a>.
 [% END %]
-
-
-
