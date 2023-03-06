@@ -114,8 +114,6 @@ siteadmin  = root@combust.example.com
 servername = qa.c.askask.com
 # don't include this in the default sites list
 disabled = 1
-# bitcard_token = 324312423423abc981
-# bitcard_url = https://www.bitcard.org/
 
 [noc]
 servername = noc.c.askask.com

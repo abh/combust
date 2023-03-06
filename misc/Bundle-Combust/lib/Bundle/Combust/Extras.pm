@@ -137,8 +137,6 @@ Authen::TypeKey::Sign
 
 Crypt::SSLeay
 
-Authen::Bitcard
-
 Sys::Syscall
 
 Danga::Socket

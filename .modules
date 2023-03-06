@@ -1,7 +1,6 @@
 # Manually kept in sync with dist.ini (!)
 # This is much easier to use than having to install Dist::Zilla and
 # the million dependencies just to get this list of dependencies ...
-Authen::Bitcard
 Cache::Memcached
 Class::Accessor::Class
 Config::General
