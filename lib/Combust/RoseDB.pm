@@ -13,16 +13,17 @@ use Rose::Class::MakeMethods::Generic ('scalar' => [qw(combust_thread_id)]);
 
 use Rose::Object::MakeMethods::Generic ('scalar' => [qw(combust_model)]);
 
+
 BEGIN {
+    my $config = Combust::Config->new();
+
     __PACKAGE__->db_cache;    # Force subclasses to inherit cache
     __PACKAGE__->use_private_registry;
 
-    my %dbs = Combust::Config::_setup_dbs();
+    my @dbs = $config->database_names;
 
-    (values %dbs)[0]->{default} = 1 if 1 == keys %dbs;
-
-    while (my ($db_name, $db_cfg) = each %dbs) {
-        $db_cfg = $dbs{$db_cfg->{alias}} if $db_cfg->{alias};
+    for my $db_name (@dbs) {
+        my $db_cfg = $config->database($db_name);
 
         my $dsn = $db_cfg->{data_source}
           or do {

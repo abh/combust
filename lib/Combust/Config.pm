@@ -5,6 +5,9 @@ use Data::Dumper qw();
 use Sys::Hostname qw(hostname);
 use Carp qw(carp croak cluck);
 use Socket qw(inet_ntoa);
+use JSON::XS qw();
+
+my $json = JSON::XS->new;
 
 my $file =
     $ENV{CBCONFIG}    ? $ENV{CBCONFIG}
@@ -170,7 +173,24 @@ sub database {
         $db_name = 'default';
         $db_name = $self->_resolve_db_alias($db_name);
     }
-    $dbs{$db_name};
+    my $auth = $dbs{$db_name} or return {};
+
+    my $filename = $ENV{db_auth_file} || '';
+    if ($auth && $auth->{password} eq '__file__' && $filename && -e $filename) {
+        if (open(my $fh, $filename)) {
+            my %auth = %$auth;
+            local $/ = undef;
+            my $data = <$fh>;
+            my $auth2 = $json->decode($data || '{}');
+            $auth{user} = $auth2->{username};
+            $auth{password} = $auth2->{password};
+            return \%auth;
+        } else {
+            warn "could not open $filename: $@";
+        }
+    }
+
+    return $auth;
 }
 
 sub _resolve_db_alias {
