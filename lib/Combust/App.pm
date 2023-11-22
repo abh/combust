@@ -182,7 +182,10 @@ sub reference {
             enable "Refresh", cooldown => 2;
         }
         enable "Plack::Middleware::XForwardedFor", (@trusted_ips ? (trust => \@trusted_ips) : ());
-        enable_if { $_[0]->{PATH_INFO} ne "/combust-healthz" }
+        enable_if {
+            my $path = $_[0]->{PATH_INFO};
+            ($path ne "/combust-healthz" and $path ne "/_health" and $path ne "/__health")
+        }
         "AccessLog",
           logger => sub { print $logfh @_ },
           format => qq{%h %V %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i" %{Request-ID}o};
