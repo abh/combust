@@ -86,6 +86,17 @@ sub site {
     $self->{_site} = $h;
 }
 
+# deployment_mode returns the first deployment mode found; works when
+# they are all configured the same
+sub deployment_mode {
+    my $self = shift;
+    for my $s ($self->sites_list) {
+        my $d = $self->site->{$_};
+        return $d->{deployment_mode} if $d->{deployment_mode};
+    }
+    return "test";
+}
+
 sub sites_list {
     my $sites = $cfg->param('sites');
     my $vars  = $cfg->vars;
@@ -180,12 +191,13 @@ sub database {
         if (open(my $fh, $filename)) {
             my %auth = %$auth;
             local $/ = undef;
-            my $data = <$fh>;
+            my $data  = <$fh>;
             my $auth2 = $json->decode($data || '{}');
-            $auth{user} = $auth2->{username};
+            $auth{user}     = $auth2->{username};
             $auth{password} = $auth2->{password};
             return \%auth;
-        } else {
+        }
+        else {
             warn "could not open $filename: $@";
         }
     }
