@@ -1,9 +1,9 @@
 package Combust;
 use strict;
 use Combust::Config;
-use 5.008002;
+use 5.30.0;
 
-our $VERSION = '2.900';
+our $VERSION = '3.001';
 
 my $config = Combust::Config->new;
 

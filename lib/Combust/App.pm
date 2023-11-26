@@ -184,7 +184,7 @@ sub reference {
         enable "Plack::Middleware::XForwardedFor", (@trusted_ips ? (trust => \@trusted_ips) : ());
 
         enable_if { $_[0]->{PATH_INFO} ne "/combust-healthz" } "Plack::Middleware::OpenTelemetry",
-          tracer => {environment => $config->deployment_mode};
+          tracer => {environment => $config->deployment_mode, "combust" => "$Combust::VERSION"};
 
         enable_if {
             my $path = $_[0]->{PATH_INFO};

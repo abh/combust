@@ -59,7 +59,7 @@ KEEPALIVE=`$CBROOT/bin/cbconfig keepalive`
 RELOAD=`$CBROOT/bin/cbconfig apache_reload`
 
 if [ $KEEPALIVE -gt 0 ]; then
-   KEEPALIVE=""
+   KEEPALIVE="--max-keepalive-reqs=100"
 else
    KEEPALIVE="--disable-keepalive"
 fi
@@ -68,11 +68,23 @@ if [ -z "$RELOAD" ]; then
    PRELOAD="--preload-app"
 fi
 
-exec $CBROOT/bin/perl `which starman` \
+export GATEWAY_INTERFACE=psgi # to make plackup not log
+exec $CBROOT/bin/perl `which plackup` \
+    -E production \
+    -s Net::Async::HTTP::Server \
+    -I$CBROOT/lib -I$CBROOTLOCAL/lib -I$CBROOTLOCAL/extlib/lib/perl5 \
+    --listen 0.0.0.0:$PORT \
+    $@ \
+    app.psgi
+
+
+exec $CBROOT/bin/perl `which starlight` \
+    -E production \
     $PRELOAD \
     -I$CBROOT/lib -I$CBROOTLOCAL/lib \
     $KEEPALIVE --keepalive-timeout=$KEEPALIVETIMEOUT \
-    --listen=0.0.0.0:$PORT \
+    --max-reqs-per-child=5000 \
+    -p $PORT \
     --workers=$WORKERS \
     $@ \
     app.psgi
