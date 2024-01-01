@@ -193,7 +193,7 @@ sub reference {
         "AccessLog",
           logger => sub { print $logfh @_ },
           format =>
-          qq{%h %V %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i" %{Request-ID}o %{Traceparent}o};
+          qq{%h %V %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i" %{Request-ID}o trace_id=%{Traceparent}o};
 
         enable "Options";
         inner();
