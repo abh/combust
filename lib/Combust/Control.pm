@@ -399,6 +399,11 @@ sub redirect {
 
     $url = $url->abs if ref $url =~ m/^URI/;
 
+    unless (defined $url) {
+        cluck "redirect called without url";
+        return (500, "missing redirect url", 'text/plain');
+    }
+
     # this should really check for a complete URI or some such; we'll do
     # that when it breaks on a ftp:// or whatever redirect :-)
     unless ($url =~ m!^https?://!i) {
