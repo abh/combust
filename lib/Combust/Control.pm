@@ -421,8 +421,10 @@ sub redirect {
     my $url_escaped = HTML::Entities::encode_entities($url);
 
     my $data = <<EOH;
-<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
-<HTML><HEAD><TITLE>Redirect...</TITLE></HEAD><BODY>The document has moved <A HREF="$url_escaped">here</A>.<P></BODY></HTML>
+<!DOCTYPE html>
+<HTML><HEAD><TITLE>Moved</TITLE></HEAD>
+<BODY><A HREF="$url_escaped">Please continue here</A></BODY>
+</HTML>
 EOH
 
     # allow setting custom headers etc - this doesn't bail out if the
