@@ -202,17 +202,6 @@ sub check_cookie {
     return ($cookie, "", 0);
 }
 
-# TODO: toss this code before the end of the year 2007 or so
-sub make_checksum_v2 {
-    my ($key, $value) = @_;
-    my $pad = "~#[d0oODxz\001>~\250as\250d75~\%,";
-    my $x   = "$pad/$key^/$key/$pad/$value/$key\L//$pad/$value";
-    $x = Encode::encode_utf8($x);
-    my $cs     = DBI::hash($x, 1);
-    my $hex_cs = unpack("H8", pack("L", $cs));
-    return uc $hex_cs;
-}
-
 sub make_checksum {
     my ($key, $ts, $value, $create) = @_;
     warn "KEY: [$key] / TS: [$ts] / VALUE: [$value]" if $DEBUG;
