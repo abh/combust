@@ -51,7 +51,7 @@ if ($opt_lock) {
 #die "$0: No database name specified.\n" unless $dbname;
 
 my $cmd = ($opt_vc) ? $opt_vc
-		    : ($0 =~ m/(my\w+)$/g)[0] || die "Can't determine command name to use from $0\n";
+		    : ($0 =~ m/(my\w+|mariadb-\w+)$/g)[0] || die "Can't determine command name to use from $0\n";
 if ($cmd eq 'mysqladmin') {
     shift @ARGV; # db name not needed for mysqladmin
 }
@@ -68,8 +68,8 @@ my ($host, $dbi_dsn, $user, $passwd) = Combust::DB::read_db_connection_parameter
 my @full_cmd;
 my $show_cmd;
 
-unless ($dbi_dsn =~ /:mysql:/) {
-  die "Oops; I only support mysql (could not connect to [$dbi_dsn])";
+unless ($dbi_dsn =~ /:(mysql|mariadb):/) {
+  die "Oops; I only support mysql and mariadb (could not connect to [$dbi_dsn])";
 }
 else {
 
