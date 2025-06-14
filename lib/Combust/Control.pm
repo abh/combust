@@ -132,6 +132,9 @@ sub _process_status {
         $$output = $self->evaluate_template("error/error.html")
           || "Error $status";
     }
+
+    # Call post_process to ensure headers (including cache-control) are set for error responses
+    $self->post_process($$output);
 }
 
 sub do_request {
