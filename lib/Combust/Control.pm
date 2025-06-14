@@ -2,13 +2,13 @@ package Combust::Control;
 use Moose;
 extends 'Combust::Base';
 
-use Combust::Constant qw(OK SERVER_ERROR MOVED DONE DECLINED REDIRECT);
-use Carp qw(confess cluck carp);
-use Digest::SHA qw(sha1_hex);
-use HTML::Entities ();
-use HTTP::Date     ();
-use Encode qw(encode_utf8);
-use Scalar::Util qw(looks_like_number reftype);
+use Combust::Constant  qw(OK SERVER_ERROR MOVED DONE DECLINED REDIRECT);
+use Carp               qw(confess cluck carp);
+use Digest::SHA        qw(sha1_hex);
+use HTML::Entities     ();
+use HTTP::Date         ();
+use Encode             qw(encode_utf8);
+use Scalar::Util       qw(looks_like_number reftype);
 use IO::Compress::Gzip qw(gzip $GzipError);
 
 # TODO: figure out why we use this; remove it if possible
@@ -50,8 +50,9 @@ sub tpl_params {
     cluck(
         "tpl_params called with [$self] as self.  Did you configure the handler to call ->handler instead of ->super?"
     ) unless ref $self;
-    cluck('Combust::Control->tpl_params called with parameters, did you mean to call "param"?')
-      if @_;
+    cluck(
+        'Combust::Control->tpl_params called with parameters, did you mean to call "param"?'
+    ) if @_;
     $self->{params} || {};
 }
 
@@ -251,7 +252,9 @@ my $ctemplate;
 sub tt {
     my $self = shift;
     $ctemplate ||= Combust::Template->new(@_);
-    if (!$ctemplate) { die "Could not initialize Combust::Template object: $Template::ERROR"; }
+    if (!$ctemplate) {
+        die "Could not initialize Combust::Template object: $Template::ERROR";
+    }
     return $ctemplate;
 }
 
@@ -332,7 +335,9 @@ sub send_output {
             $output = encode_utf8($output);
         }
 
-        if ($is_text and ($self->request->header_in('Accept-Encoding') || '') =~ m/\bgzip\b/) {
+        if ($is_text
+            and ($self->request->header_in('Accept-Encoding') || '') =~ m/\bgzip\b/)
+        {
             my $compressed;
             gzip((ref $output ? $output : \$output), \$compressed)
               or die "gzip failed: $GzipError\n";
