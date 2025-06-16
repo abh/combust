@@ -1,0 +1,7 @@
+[%- rid = combust.request_id; tid = trace_id; IF rid || tid -%]
+<p><small>(
+[%- IF rid -%]request id <code>[% rid %]</code>[%- END -%]
+[%- IF rid && tid -%], [%- END -%]
+[%- IF tid -%]trace id <code>[% tid %]</code>[%- END -%]
+)</small></p>
+[%- END -%]

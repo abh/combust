@@ -1,8 +1,4 @@
-[% IF error_text %]
-<i>[% error_text %]</i></p><p>
-[% END %]
-
-<p>Ouch! That didn't work, our server hit a bad gear.</p>
+A server error occurred while processing your request.
 
 [% IF combust.config.site.${site}.siteadmin %]
 If the problem persists, please <a href="mailto:[% combust.config.site.${site}.siteadmin %]">send mail to the staff</a>.

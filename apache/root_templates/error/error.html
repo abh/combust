@@ -8,7 +8,23 @@
 [% TRY %]
 [% PROCESS "error/${error}.html" %]
 [% CATCH %]
-Error [% error %].
+  [% IF error >= 400 && error < 500 %]
+    [% TRY %]
+    [% PROCESS "error/4xx.html" %]
+    [% CATCH %]
+    Error [% error %].
+    [% END %]
+  [% ELSIF error >= 500 %]
+    [% TRY %]
+    [% PROCESS "error/5xx.html" %]
+    [% CATCH %]
+    Error [% error %].
+    [% END %]
+  [% ELSE %]
+    Error [% error %].
+  [% END %]
 [% END %]
+
+[% PROCESS "error/debug_ids.html" %]
 
 </p>
