@@ -37,17 +37,18 @@ for my $site (@sites) {
     my $finder = File::Find::Rule->new;
 
     # don't minimize the extjs and yui files (they should already be...)
-    my @files = 
-      $finder->or( $finder->new->directory->name('extjs', 'yui', '.g', 'cdn', 'd3')->prune->discard,
-                   $finder->new->file()->name( '*.js', '*.css' )
-                 )->in( $docs_path );
-    
-    for my $file ( @files ) {
+    my @files = $finder->or(
+        $finder->new->directory->name('dist', 'build', 'extjs', 'yui', '.g', 'cdn', 'd3')->prune->discard,
+        $finder->new->file()->name('*.js', '*.css')
+    )->in($docs_path);
+
+    for my $file (@files) {
         next if $file =~ m/[\.-]min\.([^\.]+)$/;
-        if (different_mtime( min_name($file), $file))  {
+        if (different_mtime(min_name($file), $file)) {
             minimize($file);
         }
     }
+
 
     my $group_versions = {};
     my $group_versions_file = "$docs_path/.static.versions.extra.json";
