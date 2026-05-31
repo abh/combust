@@ -1,7 +1,6 @@
 package Combust::Cookies;
 use strict;
 use URI::Escape qw(uri_escape_utf8 uri_unescape);
-use Combust::Secret qw(get_secret);
 
 our $DEBUG = 0;
 
@@ -110,56 +109,15 @@ sub cookie {
 sub bake_cookies {
     my $self = shift;
 
-    #warn Data::Dumper->Dump([\$self], [qw(self)]);
-
-    my $ts = time;
-
-    my %cookies_out;
-
-    for my $cookie_name (keys %special_cookies, $default_cookie_name) {
-
-        #warn " bake cookies for cookie $cookie_name: ", ref $self;
-        next unless $self->changed($cookie_name);
-
-        my $cookies = $self->parse_cookies;
-
-        #warn Data::Dumper->Dump([\$cookies], [qw(cookies)]);
-
-        my @keys =
-          $special_cookies{$cookie_name} ? @{$special_cookies{$cookie_name}} : (keys %$cookies);
-        push @keys, "LR" . $cookie_name unless $cookie_name eq $default_cookie_name;
-
-        $self->update_last_refreshed($cookie_name, $cookies, 1);
-
-        #warn "KEYS for $cookie_name: ", join "::", @keys;
-
-        my $encoded = join(
-            '/~',
-            map {
-                my $val = delete $cookies->{$_};
-
-                #warn "VAL for $_: ", (defined $val ? $val : 'undef'), "\n";
-                ($_ => uri_escape_utf8($val, "^A-Za-z0-9\-_.!*'()"))
-            }
-              grep { defined $cookies->{$_} } @keys
-        );
-
-        next unless $encoded;    # TODO - skip the LR cookie ... oh well.
-
-        my $cs = make_checksum($cookie_name, $ts, $encoded, 1);
-
-        # 3/ is the version
-        $encoded = "3/$ts/$encoded/$cs";
-
-        warn "[$cookie_name] encoded: [$encoded]" if $DEBUG > 1;
-
+    # Legacy signed-blob cookies (c/r) are decommissioned: never write them.
+    # TRANSITIONAL: expire any a browser still presents so they stop being
+    # sent. This loop can be removed once legacy c/r cookies have aged out of
+    # the field. (expires => 1 is epoch 1970, i.e. delete-now.)
+    for my $cookie_name ($default_cookie_name, keys %special_cookies_reverse) {
+        next unless $self->request->cookies->{$cookie_name};
         $self->request->set_cookie(
-            $cookie_name,
-            $encoded,
-            {   expires => (time + 180 * 60 * 60),
-                domain  => $self->{domain},
-                path    => '/',
-            }
+            $cookie_name, '',
+            {expires => 1, domain => $self->{domain}, path => '/'}
         );
     }
     1;
@@ -168,67 +126,9 @@ sub bake_cookies {
 sub check_cookie {
     my ($cookie_name, $raw_id) = @_;
 
-    my ($cookie_version) = $raw_id =~ m!^(\d+)/!;
-
-    my $cookie;
-
-    unless ($cookie_version) {    # regex didn't match, probably truncated
-
-        # the empty id have a checksum too, but we will never allow that
-        warn "No cookie version" if $DEBUG;
-        return '' unless wantarray;
-        return ('', "trunc", 0);    # don't reset the cookie in this case
-    }
-    if ($cookie_version eq '2') {
-        warn "cookie v2 are disabled now" if $DEBUG;
-        return '';
-    }
-    elsif ($cookie_version eq "3") {
-        ($cookie_version, my $ts, $cookie, my $hex_cs) =
-          $raw_id =~ m!^(\d+)/(\d+)/(.*?)/([^/]{8})$!;
-        unless ($hex_cs and $hex_cs eq make_checksum($cookie_name, $ts, $cookie, 0)) {
-            warn "Failed checksum ($raw_id)" if $DEBUG;
-            return '' unless wantarray;
-            return ('', "failed", (rand(100) < 0.1));
-        }
-    }
-    else {    # corruption or a hacker
-        warn "Combust::Cookies got unknown cookie_version $cookie_version ($raw_id)\n";
-        return '' unless wantarray;
-        return ('', "vers", (rand(100) < 1));
-    }
-    warn "cookie ok!" if $DEBUG;
-    return $cookie unless wantarray;
-    return ($cookie, "", 0);
-}
-
-sub make_checksum {
-    my ($key, $ts, $value, $create) = @_;
-    warn "KEY: [$key] / TS: [$ts] / VALUE: [$value]" if $DEBUG;
-
-    # make sure the cache matches up with what get_secret generates
-    $ts -= $ts % 3600;
-
-    ($ts, my $pad) = get_secret(
-        time       => $ts,
-        expires_at => ($ts + 86400 * 180),
-        type       => 'cookie'
-    );
-
-    # fail-safe to make sure people can't make up their own cookies
-    $pad = rand unless $pad;
-
-    my $x = "$pad/$key^/$key/$pad/$value/$key\L//$pad/$value";
-
-    #warn "UTF8: ", utf8::is_utf8($x);
-    $x = Encode::encode_utf8($x);
-
-    my $cs     = DBI::hash($x, 1);
-    my $hex_cs = unpack("H8", pack("L", $cs));
-
-    # warn "K: $key / V: $value / $cs / HCS: ", uc $hex_cs;
-
-    return uc $hex_cs;
+    # Legacy signed-blob cookies are decommissioned; never verify/trust them.
+    return '' unless wantarray;
+    return ('', 'disabled', 0);
 }
 
 1;
