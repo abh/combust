@@ -119,8 +119,9 @@ sub _process_status {
     unless ($$output) {
 
         my $error_header = "";
-        $error_header = 'File not found' if $status == 404;
-        $error_header = 'Server Error'   if $status == 500;
+        $error_header = 'File not found'      if $status == 404;
+        $error_header = 'Server Error'        if $status == 500;
+        $error_header = 'Service Unavailable' if $status == 503;
 
         my $error_text = $self->request->notes('error') || '';
 
