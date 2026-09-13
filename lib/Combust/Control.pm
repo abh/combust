@@ -119,6 +119,8 @@ sub _process_status {
     unless ($$output) {
 
         my $error_header = "";
+        $error_header = 'Bad Request'         if $status == 400;
+        $error_header = 'Permission Denied'   if $status == 403;
         $error_header = 'File not found'      if $status == 404;
         $error_header = 'Server Error'        if $status == 500;
         $error_header = 'Service Unavailable' if $status == 503;
