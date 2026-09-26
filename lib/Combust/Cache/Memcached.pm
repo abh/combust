@@ -4,7 +4,7 @@ use Carp qw(carp);
 use Combust;
 use Data::Dumper ();
 
-use Cache::Memcached '1.27';
+use Cache::Memcached 1.27;
 
 use namespace::clean;
 
