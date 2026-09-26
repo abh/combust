@@ -95,6 +95,14 @@ else {
       close(RDR);
       print WTR "[client]\npassword=$passwd\n";
       print WTR "default-character-set=utf8\n";
+      # Pass the DBI DSN's TLS settings on to the command line client;
+      # mariadb-client 11+ verifies the server certificate by default.
+      print WTR "ssl-ca=$1\n"          if $dbi_dsn =~ /\bmysql_ssl_ca_file=([^;]+)/;
+      print WTR "ssl-capath=$1\n"      if $dbi_dsn =~ /\bmysql_ssl_ca_path=([^;]+)/;
+      print WTR "ssl-cert=$1\n"        if $dbi_dsn =~ /\bmysql_ssl_client_cert=([^;]+)/;
+      print WTR "ssl-key=$1\n"         if $dbi_dsn =~ /\bmysql_ssl_client_key=([^;]+)/;
+      print WTR "ssl-verify-server-cert\n"
+        if $dbi_dsn =~ /\bmysql_ssl_verify_server_cert=1/;
       close(WTR);
       exit 0;
     }
