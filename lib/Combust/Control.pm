@@ -125,11 +125,8 @@ sub _process_status {
         $error_header = 'Server Error'        if $status == 500;
         $error_header = 'Service Unavailable' if $status == 503;
 
-        my $error_text = $self->request->notes('error') || '';
-
         $self->tpl_param('error'        => $status);
         $self->tpl_param('error_header' => $error_header);
-        $self->tpl_param('error_text'   => $error_text);
         $self->tpl_param('error_uri'    => $self->request->uri);
 
         $$output = $self->evaluate_template("error/error.html")
